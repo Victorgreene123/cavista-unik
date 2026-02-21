@@ -18,7 +18,8 @@ const ResultPage = () => {
             icon: <FaHeartbeat className="text-rose-500" />,
             color: 'text-rose-600',
             bg: 'bg-rose-50',
-            desc: 'Within optimal range (60-100 bpm)'
+            desc: 'Within optimal range (60-100 bpm)',
+            recommendation: 'Your heart rate is healthy. Maintain it with consistent cardio (walking, swimming) 3-4 times a week.'
         },
         {
             id: 'oxygen',
@@ -29,7 +30,8 @@ const ResultPage = () => {
             icon: <MdBloodtype className="text-blue-500" />,
             color: 'text-blue-600',
             bg: 'bg-blue-50',
-            desc: 'Optimal oxygen levels detected'
+            desc: 'Optimal oxygen levels detected',
+            recommendation: 'Perfect oxygenation. Continue deep breathing exercises to maximize lung capacity.'
         },
         {
             id: 'respiration',
@@ -40,7 +42,8 @@ const ResultPage = () => {
             icon: <FaLungs className="text-cyan-500" />,
             color: 'text-cyan-600',
             bg: 'bg-cyan-50',
-            desc: 'Breathing pattern is steady'
+            desc: 'Breathing pattern is steady',
+            recommendation: 'Respiratory rate is normal. Ensure good indoor air quality and stay hydrated.'
         },
         {
             id: 'stress',
@@ -51,7 +54,8 @@ const ResultPage = () => {
             icon: <FaBrain className="text-purple-500" />,
             color: 'text-purple-600',
             bg: 'bg-purple-50',
-            desc: 'Mental state appears calm'
+            desc: 'Mental state appears calm',
+            recommendation: 'Excellent stress management. Keep up mindfulness practices or hobbies that relax you.'
         }
     ];
 
@@ -140,20 +144,28 @@ const ResultPage = () => {
                 {/* Recommendations / Insights */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Main Insight */}
-                    <div className="md:col-span-2 bg-indigo-600 rounded-2xl p-6 text-white shadow-lg shadow-indigo-200">
-                         <div className="flex items-start gap-4">
-                            <div className="p-3 bg-white/20 rounded-lg backdrop-blur-sm">
-                                <MdOutlineHealthAndSafety className="text-2xl text-white" />
-                            </div>
-                            <div>
-                                <h3 className="text-lg font-semibold mb-2">AI Health Tip</h3>
-                                <p className="text-indigo-100 text-sm leading-relaxed mb-4">
-                                    Your heart rate variability indicates good recovery status. Consider a moderate intensity workout today to maintain cardiovascular health without overtraining.
-                                </p>
-                                <button className="text-xs font-bold uppercase tracking-wider bg-white text-indigo-600 px-4 py-2 rounded-lg hover:bg-indigo-50 transition-colors">
-                                    View Workout Plan
-                                </button>
-                            </div>
+                    <div className="md:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                         <div className="flex items-center gap-2 mb-6">
+                            <MdOutlineHealthAndSafety className="text-2xl text-emerald-600" />
+                            <h2 className="text-xl font-bold text-gray-900">Health Insights & Recommendations</h2>
+                        </div>
+                        
+                        <div className="grid gap-4">
+                            {biometricData.map((metric) => (
+                                <div key={metric.id} className="flex gap-4 p-4 rounded-xl bg-gray-50 border border-gray-100 items-start">
+                                    <div className="mt-1 shrink-0">
+                                        <div className={`p-2 rounded-lg ${metric.bg} ${metric.color}`}>
+                                            {metric.icon}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-bold text-gray-900 mb-1">{metric.label} Analysis</h3>
+                                        <p className="text-sm text-gray-600 leading-relaxed">
+                                            {metric.recommendation}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
 
