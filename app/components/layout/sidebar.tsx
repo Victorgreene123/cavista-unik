@@ -37,9 +37,26 @@ export default function Sidebar() {
         <div className="mb-4">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-md bg-white/20 flex items-center justify-center">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <path d="M3 12h18" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
-                <path d="M6 7h12v10H6z" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden
+              >
+                <path
+                  d="M3 12h18"
+                  stroke="white"
+                  strokeWidth="1.2"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M6 7h12v10H6z"
+                  stroke="white"
+                  strokeWidth="1.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </div>
             <div>
