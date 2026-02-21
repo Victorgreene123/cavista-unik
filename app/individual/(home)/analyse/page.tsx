@@ -101,13 +101,29 @@ const AnalysePage = () => {
             <div className="w-full max-w-3xl flex flex-col gap-8">
                 
                 {/* Header */}
-                <div className="text-center space-y-2">
-                    <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-                        Health Scan
-                    </h1>
-                    <p className="text-gray-500 text-lg">
+                <div className="flex flex-col items-center gap-4 mb-2">
+                    <div className="relative">
+                        <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-blue-500 tracking-tight">
+                            VitalScan AI
+                        </h1>
+                        {(ScanningState === 'scanning' || ScanningState === 'detecting') && (
+                            <div className="absolute -top-3 -right-8 flex items-center gap-1 bg-red-50 px-2 py-0.5 rounded-full border border-red-100">
+                                <span className="relative flex h-2 w-2">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                                </span>
+                                <span className="text-[10px] font-bold text-red-600 uppercase tracking-wider">LIVE</span>
+                            </div>
+                        )}
+                    </div>
+                    
+                    <div className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300 ${
+                        ScanningState === 'scanning' ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' :
+                        ScanningState === 'complete' ? 'bg-green-50 text-green-700 border border-green-100' :
+                        'bg-gray-100 text-gray-500'
+                    }`}>
                         {message}
-                    </p>
+                    </div>
                 </div>
 
                 {/* Main Viewport */}

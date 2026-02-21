@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from 'next/link';
-import { FaBars, FaTimes, FaBell, FaUserCircle } from "react-icons/fa";
+import { FaBars, FaTimes, FaBell, FaUserCircle, FaSearch } from "react-icons/fa";
 import { MdHealthAndSafety } from "react-icons/md";
 import { IoSettingsOutline } from "react-icons/io5";
 
@@ -15,8 +15,7 @@ const NavbarIndividual = () => {
     const navLinks = [
         { name: "Dashboard", href: "/individual" },
         { name: "My Scans", href: "/individual/history" },
-        { name: "Insights", href: "/individual/insights" },
-        { name: "Doctors", href: "/individual/doctors" },
+        { name: "Find Care", href: "/individual/search" },
     ];
 
     return (
@@ -48,6 +47,11 @@ const NavbarIndividual = () => {
 
                     {/* Right Side Icons */}
                     <div className="hidden md:flex items-center space-x-6">
+                        {/* Search Icon */}
+                        <Link href="/individual/search" className="text-gray-400 hover:text-indigo-600 transition-colors p-2 hover:bg-gray-50 rounded-full">
+                            <FaSearch size={20} />
+                        </Link>
+                        
                         {/* Notification Bell */}
                         <button className="relative text-gray-400 hover:text-indigo-500 transition-colors">
                             <FaBell size={20} />
@@ -77,7 +81,10 @@ const NavbarIndividual = () => {
                     </div>
 
                     {/* Mobile Menu Button */}
-                    <div className="flex items-center md:hidden">
+                    <div className="flex items-center gap-4 md:hidden">
+                        <Link href="/individual/search" className="text-gray-500 hover:text-indigo-600 p-2">
+                             <FaSearch size={20} />
+                        </Link>
                         <button
                             onClick={toggleMenu}
                             className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 transition-colors"
