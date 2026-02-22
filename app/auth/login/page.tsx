@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { FaUser, FaHospital, FaGoogle, FaApple, FaArrowRight } from "react-icons/fa";
 import { useAuth } from "@/app/contexts/AuthContext";
 
@@ -10,15 +11,29 @@ export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const { login, isLoading } = useAuth();
+    const [loading, setLoading] = useState(false);
+    const { login } = useAuth();
+    const router = useRouter();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setLoading(true);
+
         try {
-            await login(email, password, userType);
+            const role = userType === 'individual' ? 'INDIVIDUAL' : 'HOSPITAL_ADMIN';
+            await login(email, password, role);
+            
+            // Redirect based on role
+            if (userType === 'individual') {
+                router.push('/individual');
+            } else {
+                router.push('/hospital/dashboard');
+            }
         } catch (err: any) {
-            setError(err.message || 'Login failed. Please check your credentials.');
+            setError(err.message || 'Login failed. Please try again.');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -124,14 +139,14 @@ export default function LoginPage() {
                             <h2 className="text-xl font-bold text-gray-900">Welcome Back</h2>
                             <p className="text-sm text-gray-500 mt-1">Sign in to continue.</p>
                         </div>
-                        
-                        {error && (
-                            <div className="text-red-500 text-xs bg-red-50 p-2 rounded text-center">
-                                {error}
-                            </div>
-                        )}
 
-                        <form className="space-y-4" onSubmit={handleSubmit}>
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            {error && (
+                                <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg">
+                                    {error}
+                                </div>
+                            )}
+
                             <div className="space-y-1.5">
                                 <label className="text-xs font-bold text-gray-700 ml-1">Email</label>
                                 <input
@@ -139,6 +154,9 @@ export default function LoginPage() {
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     placeholder={userType === 'individual' ? "you@example.com" : "admin@hospital.com"}
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
                                     className={`w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-100 text-sm focus:bg-white outline-none transition-all duration-300 ${userType === 'individual' ? 'focus:border-indigo-500 focus:shadow-indigo-50' : 'focus:border-teal-500 focus:shadow-teal-50'}`}
                                     required
                                 />
@@ -151,6 +169,9 @@ export default function LoginPage() {
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="••••••••"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
                                     className={`w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-100 text-sm focus:bg-white outline-none transition-all duration-300 ${userType === 'individual' ? 'focus:border-indigo-500 focus:shadow-indigo-50' : 'focus:border-teal-500 focus:shadow-teal-50'}`}
                                     required
                                 />
@@ -166,10 +187,10 @@ export default function LoginPage() {
 
                             <button
                                 type="submit"
-                                disabled={isLoading}
-                                className={`w-full py-3 rounded-xl text-white font-bold text-sm shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2 ${userType === 'individual' ? 'bg-indigo-600 shadow-indigo-200' : 'bg-teal-600 shadow-teal-200'} ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                                disabled={loading}
+                                className={`w-full py-3 rounded-xl text-white font-bold text-sm shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${userType === 'individual' ? 'bg-indigo-600 shadow-indigo-200' : 'bg-teal-600 shadow-teal-200'}`}
                             >
-                                {isLoading ? 'Signing In...' : 'Sign In'} <FaArrowRight className="text-xs" />
+                                {loading ? 'Signing in...' : 'Sign In'} {!loading && <FaArrowRight className="text-xs" />}
                             </button>
                         </form>
 

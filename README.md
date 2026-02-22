@@ -1,36 +1,106 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Cavista-Unik 🏥✨
 
-## Getting Started
+**The Future of Smart Healthcare Management & Personal Wellness.**
 
-First, run the development server:
+Cavista-Unik is a modern, AI-powered healthcare platform designed to bridge the gap between patients and medical providers. It features a dual-persona interface that serves both **Individuals (Patients)** seeking personal health insights and **Hospitals (Providers)** managing clinical operations.
+
+---
+
+## 🚀 Key Features
+
+### 👤 For Individuals (Patients)
+- **Health Scanning**: Instant biometric analysis (Heart Rate, Oxygen, Stress, Respiration) via optical scanning technology.
+- **AI Health Insights**: Personalized, actionable recommendations based on your scan results.
+- **Smart Booking**: Schedule appointments with doctors seamlessly.
+- **Medical History**: Secure access to your past reports and scan data.
+- **Creative UI**: A calming Indigo/Purple theme designed for patient comfort.
+
+### 🏥 For Hospitals (Providers)
+- **AI Voice-to-Text Reporting**: Record voice notes and generate structured clinical reports instantly.
+- **Provider Dashboard**: Real-time analytics on patient inflow, appointments, and revenue.
+- **Clinical Workflow**: Streamlined tools for managing patient data and resources.
+- **Professional UI**: A crisp Teal/Emerald theme focused on efficiency and clarity.
+
+---
+
+## 🛠️ Tech Stack
+
+- **Framework**: [Next.js 15+](https://nextjs.org/) (App Router)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **Icons**: [React Icons](https://react-icons.github.io/react-icons/)
+- **Animations**: Custom CSS animations (`animate-blob`, `backdrop-blur`) & transitions.
+- **Language**: TypeScript
+
+---
+
+## 📂 Project Structure
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cavista-unik/
+├── app/
+│   ├── auth/                 # Authentication Routes (Login/Register)
+│   │   ├── login/            # Dual-persona Login Page
+│   │   └── register/         # Dual-persona Registration Page
+│   ├── hospital/             # Hospital Dashboard & Features
+│   │   └── (dashboard)/      # Protected Admin Routes
+│   ├── individual/           # Patient Portal Features
+│   │   ├── (home)/           # Landing & Dashboard
+│   │   ├── analyse/          # Health Scanning & Results
+│   │   └── appointments/     # Booking System
+│   └── api/                  # Backend API Routes
+│       └── generate-report/  # AI Report Generation Logic
+├── public/                   # Static Assets
+└── ...config files           # Tailwind, Next.js, TypeScript configs
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🎨 Design Philosophy
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The application uses a unique **Dual-Theme System**:
+1.  **Patient Mode**: Soft gradients (`from-indigo-50` to `purple-50`), rounded cards, and friendly visuals.
+2.  **Provider Mode**: Professional gradients (`from-teal-50` to `emerald-50`), structured layouts, and clinical precision.
 
-## Learn More
+Both modes are fully **responsive**, featuring a strict `100vh` layout on mobile to prevent scrolling and ensure an app-like experience.
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🚦 Getting Started
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/your-username/cavista-unik.git
+    cd cavista-unik
+    ```
 
-## Deploy on Vercel
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    # or
+    yarn install
+    ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+3.  **Run the development server:**
+    ```bash
+    npm run dev
+    ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+4.  **Open your browser:**
+    Navigate to [http://localhost:3000](http://localhost:3000)
+
+---
+
+## 🔒 Authentication
+
+- **Login**: `/auth/login` - Toggle between *Individual* and *Hospital* accounts.
+- **Register**: `/auth/register` - specific fields for distinct user types.
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+---
+
+*Powered by Cavista-Unik Team © 2026*

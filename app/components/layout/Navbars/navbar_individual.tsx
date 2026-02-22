@@ -5,16 +5,18 @@ import Link from 'next/link';
 import { FaBars, FaTimes, FaBell, FaUserCircle, FaSearch } from "react-icons/fa";
 import { MdHealthAndSafety } from "react-icons/md";
 import { IoSettingsOutline } from "react-icons/io5";
+import { useAuth } from "@/app/contexts/AuthContext";
 
 const NavbarIndividual = () => {
+    const { user } = useAuth();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [hasNotifications, setHasNotifications] = useState(true);
 
     const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
     const navLinks = [
-        { name: "Dashboard", href: "/individual" },
-        { name: "My Scans", href: "/individual/history" },
+        { name: "My Dashboard", href: "/individual" }, 
+        { name: "History", href: "/individual/history" },
         { name: "Find Care", href: "/individual/search" },
     ];
 
@@ -68,8 +70,10 @@ const NavbarIndividual = () => {
                         {/* User Profile */}
                         <div className="flex items-center gap-3 border-l pl-6 border-gray-200">
                              <div className="text-right hidden lg:block">
-                                <p className="text-sm font-semibold text-gray-700">Alex Johnson</p>
-                                <p className="text-xs text-gray-500">Premium Member</p>
+                                <p className="text-sm font-semibold text-gray-700">
+                                    {user?.individualProfile?.firstName || user?.email || 'User'}
+                                </p>
+                                <p className="text-xs text-gray-500">Member</p>
                             </div>
                             <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 p-[2px] cursor-pointer">
                                 <div className="h-full w-full rounded-full bg-white flex items-center justify-center overflow-hidden">

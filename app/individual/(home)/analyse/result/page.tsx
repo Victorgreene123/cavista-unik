@@ -1,13 +1,26 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { FaHeartbeat, FaLungs, FaBrain, FaWalking, FaChevronRight } from 'react-icons/fa';
 import { MdBloodtype, MdOutlineHealthAndSafety } from "react-icons/md";
 import { IoArrowBack } from "react-icons/io5";
+import { useAuth } from '@/app/contexts/AuthContext';
 
 const ResultPage = () => {
-    // Mock Data for Results
+    const router = useRouter();
+    const { user, isAuthenticated } = useAuth();
+    const [isSaving, setIsSaving] = useState(false);
+
+    useEffect(() => {
+        // Redirect to login if not authenticated
+        if (!isAuthenticated) {
+            router.push('/auth/login');
+        }
+    }, [isAuthenticated, router]);
+
+    // Mock Data for Results - in a real app, this would come from the scanning/analysis
     const biometricData = [
         {
             id: 'heart-rate',
@@ -60,6 +73,40 @@ const ResultPage = () => {
     ];
 
     const overallScore = 92;
+
+    const handleSaveScan = async () => {
+        try {
+            if (!user?.id) return;
+            
+            setIsSaving(true);
+            
+            const scanData = {
+                individualId: user.id,
+                heartRate: 74,
+                oxygenSaturation: 98,
+                stressLevel: 'Low',
+                overallScore: 92,
+                aiAnalysis: 'Your vitals look great! All physiological markers are well within the healthy range.'
+            };
+
+            const response = await fetch('/api/health-scans', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(scanData),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to save scan');
+            }
+
+            alert('Scan saved successfully!');
+        } catch (error) {
+            console.error('Error saving scan:', error);
+            alert('Failed to save scan. Please try again.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-gray-50 p-4 md:p-8">
@@ -171,13 +218,17 @@ const ResultPage = () => {
 
                     {/* Secondary Actions */}
                     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col justify-center space-y-3">
-                        <Link href="/individual/history" className="flex items-center justify-between text-gray-600 hover:text-indigo-600 group transition-colors p-2 rounded-lg hover:bg-gray-50">
-                            <span className="font-medium text-sm">View Scan History</span>
-                            <FaChevronRight className="text-gray-300 group-hover:text-indigo-400 transition-colors" />
-                        </Link>
+                        <button 
+                            onClick={handleSaveScan}
+                            disabled={isSaving}
+                            className="flex items-center justify-between text-indigo-600 hover:text-indigo-700 group transition-colors p-2 rounded-lg hover:bg-indigo-50 font-medium text-sm disabled:opacity-50"
+                        >
+                            <span>{isSaving ? 'Saving...' : 'Save Scan'}</span>
+                            <FaChevronRight className="text-indigo-400 group-hover:text-indigo-600 transition-colors" />
+                        </button>
                          <div className="h-px bg-gray-100"></div>
-                        <Link href="/individual/doctors" className="flex items-center justify-between text-gray-600 hover:text-indigo-600 group transition-colors p-2 rounded-lg hover:bg-gray-50">
-                            <span className="font-medium text-sm">Consult a Doctor</span>
+                        <Link href="/individual/search" className="flex items-center justify-between text-gray-600 hover:text-indigo-600 group transition-colors p-2 rounded-lg hover:bg-gray-50">
+                            <span className="font-medium text-sm">Find a Doctor</span>
                             <FaChevronRight className="text-gray-300 group-hover:text-indigo-400 transition-colors" />
                         </Link>
                          <div className="h-px bg-gray-100"></div>

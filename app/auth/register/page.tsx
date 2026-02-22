@@ -2,51 +2,51 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { FaUser, FaHospital, FaGoogle, FaApple, FaArrowRight, FaCheckCircle } from "react-icons/fa";
 import { useAuth } from "@/app/contexts/AuthContext";
 
 export default function RegisterPage() {
     const [userType, setUserType] = useState<'individual' | 'hospital'>('individual');
-    const { register, isLoading } = useAuth();
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
     
-    // Form States
+    // Individual fields
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
-    const [hospitalName, setHospitalName] = useState('');
-    const [regNumber, setRegNumber] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
+    
+    // Hospital fields
+    const [hospitalName, setHospitalName] = useState('');
+    const [regNumber, setRegNumber] = useState('');
+    
+    const { register } = useAuth();
+    const router = useRouter();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setLoading(true);
 
         try {
-            let name = '';
+            const role = userType === 'individual' ? 'INDIVIDUAL' : 'HOSPITAL_ADMIN';
+            const profileData = userType === 'individual' 
+                ? { firstName, lastName, phone: '' }
+                : { hospitalName, regNumber, phone: '' };
+
+            await register(email, password, role, profileData);
+            
+            // Redirect based on role
             if (userType === 'individual') {
-                if (!firstName || !lastName) {
-                    setError("Please enter your full name.");
-                    return;
-                }
-                name = `${firstName} ${lastName}`;
+                router.push('/individual');
             } else {
-                if (!hospitalName || !regNumber) {
-                    setError("Please provide Hospital Name and Registration Number.");
-                    return;
-                }
-                name = hospitalName; // You might want to store Reg Number too, but AuthContext only takes name for now.
+                router.push('/hospital/dashboard');
             }
-
-            if (!email || !password) {
-                setError("Please fill in all fields.");
-                return;
-            }
-
-            await register(email, password, name, userType);
-
         } catch (err: any) {
-            setError(err.message || "Registration failed. Please try again.");
+            setError(err.message || 'Registration failed. Please try again.');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -85,14 +85,14 @@ export default function RegisterPage() {
                             <h2 className="text-xl font-bold text-gray-900">Create Account</h2>
                             <p className="text-sm text-gray-500 mt-1">Join Cavista today.</p>
                         </div>
-                        
-                        {error && (
-                            <div className="bg-red-50 text-red-600 text-xs p-2 rounded text-center">
-                                {error}
-                            </div>
-                        )}
 
-                        <form className="space-y-3" onSubmit={handleSubmit}>
+                        <form onSubmit={handleSubmit} className="space-y-3">
+                            {error && (
+                                <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg">
+                                    {error}
+                                </div>
+                            )}
+
                             {userType === 'individual' ? (
                                 <>
                                     <div className="grid grid-cols-2 gap-3">
@@ -100,9 +100,9 @@ export default function RegisterPage() {
                                             <label className="text-[10px] font-bold text-gray-700 ml-1 uppercase">First Name</label>
                                             <input 
                                                 type="text" 
+                                                placeholder="John" 
                                                 value={firstName}
                                                 onChange={(e) => setFirstName(e.target.value)}
-                                                placeholder="John" 
                                                 required
                                                 className="w-full px-4 py-2.5 rounded-lg bg-gray-50 border border-gray-100 text-sm focus:bg-white outline-none transition-all duration-300 focus:border-indigo-500 focus:shadow-indigo-50" 
                                             />
@@ -110,10 +110,10 @@ export default function RegisterPage() {
                                         <div className="space-y-1.5">
                                             <label className="text-[10px] font-bold text-gray-700 ml-1 uppercase">Last Name</label>
                                             <input 
-                                                type="text"
+                                                type="text" 
+                                                placeholder="Doe" 
                                                 value={lastName}
                                                 onChange={(e) => setLastName(e.target.value)}
-                                                placeholder="Doe" 
                                                 required
                                                 className="w-full px-4 py-2.5 rounded-lg bg-gray-50 border border-gray-100 text-sm focus:bg-white outline-none transition-all duration-300 focus:border-indigo-500 focus:shadow-indigo-50" 
                                             />
@@ -123,9 +123,9 @@ export default function RegisterPage() {
                                         <label className="text-[10px] font-bold text-gray-700 ml-1 uppercase">Email Address</label>
                                         <input 
                                             type="email" 
+                                            placeholder="john@example.com" 
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value)}
-                                            placeholder="john@example.com" 
                                             required
                                             className="w-full px-4 py-2.5 rounded-lg bg-gray-50 border border-gray-100 text-sm focus:bg-white outline-none transition-all duration-300 focus:border-indigo-500 focus:shadow-indigo-50" 
                                         />
@@ -137,9 +137,9 @@ export default function RegisterPage() {
                                         <label className="text-[10px] font-bold text-gray-700 ml-1 uppercase">Hospital Name</label>
                                         <input 
                                             type="text" 
+                                            placeholder="General Hospital" 
                                             value={hospitalName}
                                             onChange={(e) => setHospitalName(e.target.value)}
-                                            placeholder="General Hospital" 
                                             required
                                             className="w-full px-4 py-2.5 rounded-lg bg-gray-50 border border-gray-100 text-sm focus:bg-white outline-none transition-all duration-300 focus:border-teal-500 focus:shadow-teal-50" 
                                         />
@@ -148,9 +148,9 @@ export default function RegisterPage() {
                                         <label className="text-[10px] font-bold text-gray-700 ml-1 uppercase">Reg. Number</label>
                                         <input 
                                             type="text" 
+                                            placeholder="Hv-12345" 
                                             value={regNumber}
                                             onChange={(e) => setRegNumber(e.target.value)}
-                                            placeholder="Hv-12345" 
                                             required
                                             className="w-full px-4 py-2.5 rounded-lg bg-gray-50 border border-gray-100 text-sm focus:bg-white outline-none transition-all duration-300 focus:border-teal-500 focus:shadow-teal-50" 
                                         />
@@ -159,9 +159,9 @@ export default function RegisterPage() {
                                         <label className="text-[10px] font-bold text-gray-700 ml-1 uppercase">Email Address</label>
                                         <input 
                                             type="email" 
+                                            placeholder="admin@hospital.com" 
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value)}
-                                            placeholder="admin@hospital.com" 
                                             required
                                             className="w-full px-4 py-2.5 rounded-lg bg-gray-50 border border-gray-100 text-sm focus:bg-white outline-none transition-all duration-300 focus:border-teal-500 focus:shadow-teal-50" 
                                         />
@@ -176,6 +176,8 @@ export default function RegisterPage() {
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="••••••••"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
                                     required
                                     className={`w-full px-4 py-2.5 rounded-lg bg-gray-50 border border-gray-100 text-sm focus:bg-white outline-none transition-all duration-300 ${userType === 'individual' ? 'focus:border-indigo-500 focus:shadow-indigo-50' : 'focus:border-teal-500 focus:shadow-teal-50'}`}
                                 />
@@ -183,10 +185,10 @@ export default function RegisterPage() {
 
                             <button
                                 type="submit"
-                                disabled={isLoading}
-                                className={`w-full py-3 rounded-xl text-white font-bold text-sm shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2 mt-2 ${userType === 'individual' ? 'bg-indigo-600 shadow-indigo-200' : 'bg-teal-600 shadow-teal-200'} ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                                disabled={loading}
+                                className={`w-full py-3 rounded-xl text-white font-bold text-sm shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2 mt-2 disabled:opacity-50 disabled:cursor-not-allowed ${userType === 'individual' ? 'bg-indigo-600 shadow-indigo-200' : 'bg-teal-600 shadow-teal-200'}`}
                             >
-                                <span className="uppercase tracking-wide text-xs">{isLoading ? 'Creating Account...' : 'Create Account'}</span> <FaArrowRight className="text-xs" />
+                                <span className="uppercase tracking-wide text-xs">{loading ? 'Creating...' : 'Create Account'}</span> {!loading && <FaArrowRight className="text-xs" />}
                             </button>
                         </form>
 
