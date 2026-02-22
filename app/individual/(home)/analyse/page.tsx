@@ -1,235 +1,402 @@
-"use client";
+﻿"use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { FaCamera, FaCheckCircle, FaExclamationTriangle, FaHeartbeat } from "react-icons/fa";
-import { MdOutlineHealthAndSafety } from "react-icons/md";
+import {
+  FaVideo,
+  FaUpload,
+  FaPlay,
+  FaSpinner,
+  FaCheckCircle,
+  FaExclamationTriangle,
+} from "react-icons/fa";
 
 const AnalysePage = () => {
-    const router = useRouter();
-    const videoRef = useRef<HTMLVideoElement>(null);
-    const [stream, setStream] = useState<MediaStream | null>(null);
-    const [ScanningState, setScanningState] = useState<'idle' | 'camera-access' | 'detecting' | 'scanning' | 'complete'>('idle');
-    const [progress, setProgress] = useState(0);
-    const [message, setMessage] = useState("Ready to start.");
-    const [isFaceAligned, setIsFaceAligned] = useState(false);
-    
-    // Constants
-    const SCAN_DURATION = 30000; // 30 seconds in ms
-    const DETECTION_TIME = 3000; // 3 seconds to "find face"
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState<"record" | "upload">("record");
+  const [file, setFile] = useState<File | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-    const startCamera = async () => {
-        setScanningState('camera-access');
-        setMessage("Accessing camera...");
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 640, height: 480, facingMode: "user" },
+        audio: false,
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+      setError(null);
+    } catch (err) {
+      console.error("Error accessing camera:", err);
+      setError("Could not access camera. Please check permissions.");
+    }
+  };
+
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+  }, []);
+
+  // Start camera when switching to record tab
+  React.useEffect(() => {
+    if (activeTab === "record") {
+      startCamera();
+    } else {
+      stopCamera();
+    }
+    return () => stopCamera();
+  }, [activeTab, stopCamera]);
+
+  const RECORDING_DURATION = 30;
+
+  const stopRecording = useCallback(() => {
+    if (
+      mediaRecorderRef.current &&
+      mediaRecorderRef.current.state !== "inactive"
+    ) {
+      mediaRecorderRef.current.stop();
+    }
+    setIsRecording(false);
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+  }, []);
+
+  const startRecording = () => {
+    if (!streamRef.current) return;
+
+    chunksRef.current = [];
+    const mediaRecorder = new MediaRecorder(streamRef.current, {
+      mimeType: "video/webm;codecs=vp8",
+    });
+
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) {
+        chunksRef.current.push(e.data);
+      }
+    };
+
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(chunksRef.current, { type: "video/webm" });
+      // VitalLens API expects a standard video extension like .webm or .mp4
+      const recordedFile = new File([blob], "recording.webm", {
+        type: "video/webm",
+      });
+      setFile(recordedFile);
+      stopCamera();
+    };
+
+    mediaRecorderRef.current = mediaRecorder;
+    mediaRecorder.start();
+    setIsRecording(true);
+    setRecordingTime(0);
+    setFile(null);
+    setError(null);
+
+    timerRef.current = setInterval(() => {
+      setRecordingTime((prev) => {
+        if (prev >= RECORDING_DURATION - 1) {
+          stopRecording();
+          return RECORDING_DURATION;
+        }
+        return prev + 1;
+      });
+    }, 1000);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setFile(e.target.files[0]);
+      setError(null);
+    }
+  };
+
+  const handleScan = async () => {
+    if (!file) {
+      setError("Please record or upload a video first.");
+      return;
+    }
+
+    setIsAnalyzing(true);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("video", file);
+      formData.append("process_signals", "true");
+      formData.append("fps", "30");
+
+      const response = await fetch(
+        "http://localhost:3000/api/vitallens/analyze-video",
+        {
+          method: "POST",
+          body: formData,
+        },
+      );
+
+      if (!response.ok) {
+        let errorMsg = response.statusText;
         try {
-            const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: "user" } 
-            });
-            setStream(mediaStream);
-            if (videoRef.current) {
-                videoRef.current.srcObject = mediaStream;
-            }
-            setScanningState('detecting');
-            setMessage("Please position your face in the frame.");
-        } catch (err) {
-            console.error("Error accessing camera:", err);
-            setMessage("Camera access denied.");
-            setScanningState('idle');
-        }
-    };
+          const errData = await response.json();
+          if (errData.message) errorMsg = errData.message;
+        } catch (e) {}
+        throw new Error(`Analysis failed: ${errorMsg}`);
+      }
 
-    const stopCamera = () => {
-        if (stream) {
-            stream.getTracks().forEach(track => track.stop());
-            setStream(null);
-        }
-    };
+      const data = await response.json();
 
-    useEffect(() => {
-        return () => {
-            stopCamera();
-        };
-    }, [stream]);
+      // Helper: extract scalar metric fields only (value, unit, confidence)
+      const pick = (m: any) => {
+        if (!m || typeof m !== "object") return undefined;
+        const o: any = {};
+        if (m.value !== undefined) o.value = m.value;
+        if (m.unit !== undefined) o.unit = m.unit;
+        if (m.confidence !== undefined) o.confidence = m.confidence;
+        return o;
+      };
 
-    // Simulate Face Detection and Scanning Process
-    useEffect(() => {
-        let detectionTimeout: NodeJS.Timeout;
-        let scanInterval: NodeJS.Timeout;
+      const vs = data.vital_signs || {};
+      const ps = data.processing_status || {};
+      const pp = data.preprocessing || {};
 
-        if (ScanningState === 'detecting') {
-            // Simulate waiting for face alignment
-            detectionTimeout = setTimeout(() => {
-                setIsFaceAligned(true);
-                setScanningState('scanning');
-                setMessage("Scanning... Please hold still.");
-            }, DETECTION_TIME);
-        } else if (ScanningState === 'scanning') {
-            const startTime = Date.now();
-            scanInterval = setInterval(() => {
-                const elapsedTime = Date.now() - startTime;
-                const newProgress = Math.min((elapsedTime / SCAN_DURATION) * 100, 100);
-                
-                setProgress(newProgress);
+      const resultPayload = {
+        vital_signs: {
+          heart_rate: pick(vs.heart_rate),
+          respiratory_rate: pick(vs.respiratory_rate),
+          hrv_sdnn: pick(vs.hrv_sdnn),
+          hrv_rmssd: pick(vs.hrv_rmssd),
+          hrv_lfhf: pick(vs.hrv_lfhf),
+        },
+        processing_status: {
+          face_detected: ps.face_detected,
+          signal_quality: ps.signal_quality,
+          avg_face_confidence: ps.avg_face_confidence,
+          issues: ps.issues,
+        },
+        preprocessing: {
+          input_frames: pp.input_frames,
+          fps_used: pp.fps_used,
+          resolution: pp.resolution,
+          pixel_format: pp.pixel_format,
+        },
+        model_used: data.model_used,
+        message: data.message,
+      };
 
-                if (newProgress >= 100) {
-                    clearInterval(scanInterval);
-                    setScanningState('complete');
-                    setMessage("Scan complete.");
-                    stopCamera();
-                    // Navigate to results
-                    setTimeout(() => {
-                        router.push('/individual/analyse/result'); 
-                    }, 1500);
-                }
-            }, 50);
-        }
+      const encodedData = encodeURIComponent(JSON.stringify(resultPayload));
+      router.push(`/individual/analyse/result?data=${encodedData}`);
+    } catch (err: any) {
+      console.error("Scan error:", err);
+      setError(err.message || "An error occurred during analysis.");
+      setIsAnalyzing(false);
+    }
+  };
 
-        return () => {
-            clearTimeout(detectionTimeout);
-            clearInterval(scanInterval);
-        };
-    }, [ScanningState, router]);
-
-    // Dynamic styles
-    const frameBorderColor = isFaceAligned && ScanningState === 'scanning' 
-        ? "border-indigo-600" 
-        : "border-gray-300";
-
-    return (
-        <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4 md:p-8">
-            
-            <div className="w-full max-w-3xl flex flex-col gap-8">
-                
-                {/* Header */}
-                <div className="flex flex-col items-center gap-4 mb-2">
-                    <div className="relative">
-                        <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-blue-500 tracking-tight">
-                            VitalScan AI
-                        </h1>
-                        {(ScanningState === 'scanning' || ScanningState === 'detecting') && (
-                            <div className="absolute -top-3 -right-8 flex items-center gap-1 bg-red-50 px-2 py-0.5 rounded-full border border-red-100">
-                                <span className="relative flex h-2 w-2">
-                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                                </span>
-                                <span className="text-[10px] font-bold text-red-600 uppercase tracking-wider">LIVE</span>
-                            </div>
-                        )}
-                    </div>
-                    
-                    <div className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300 ${
-                        ScanningState === 'scanning' ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' :
-                        ScanningState === 'complete' ? 'bg-green-50 text-green-700 border border-green-100' :
-                        'bg-gray-100 text-gray-500'
-                    }`}>
-                        {message}
-                    </div>
-                </div>
-
-                {/* Main Viewport */}
-                <div className="relative w-full bg-gray-50 rounded-2xl overflow-hidden border border-gray-100 shadow-xl aspect-video isolate">
-                    
-                    {/* Content Container */}
-                    <div className="absolute inset-0 flex items-center justify-center z-10">
-                        {ScanningState === 'idle' && (
-                            <div className="text-center p-8 bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100 max-w-md mx-auto">
-                                <div className="bg-indigo-50 p-4 rounded-full inline-block mb-4 text-indigo-600">
-                                    <MdOutlineHealthAndSafety className="text-4xl" />
-                                </div>
-                                <h3 className="text-gray-900 text-xl font-semibold mb-2">Start Assessment</h3>
-                                <p className="text-gray-500 mb-6 leading-relaxed">
-                                    We'll analyze your vital signs using your camera. Please ensure you're in a well-lit area.
-                                </p>
-                                <button 
-                                    onClick={startCamera}
-                                    className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-full transition-colors shadow-lg hover:shadow-xl shadow-indigo-200"
-                                >
-                                    Begin Scan
-                                </button>
-                            </div>
-                        )}
-
-                        {ScanningState !== 'idle' && ScanningState !== 'complete' && (
-                            <>
-                                <video 
-                                    ref={videoRef}
-                                    autoPlay 
-                                    playsInline 
-                                    muted
-                                    className="absolute inset-0 w-full h-full object-cover transform scale-x-[-1]"
-                                />
-                                
-                                {/* Face Frame */}
-                                <div className={`relative w-64 h-80 rounded-[3rem] border-4 transition-colors duration-500 ${frameBorderColor} shadow-2xl`}>
-                                    {/* Scanning Indicator */}
-                                    {ScanningState === 'scanning' && (
-                                        <div className="absolute top-0 left-0 w-full h-1 bg-indigo-500/50 shadow-[0_0_15px_rgba(99,102,241,1)] animate-scan-simple"></div>
-                                    )}
-                                </div>
-                            </>
-                        )}
-
-                        {ScanningState === 'complete' && (
-                            <div className="text-center animate-fade-in bg-white/90 p-8 rounded-2xl backdrop-blur-md shadow-lg border border-green-100">
-                                <div className="inline-block mb-4 text-green-500 bg-green-50 p-3 rounded-full">
-                                     <FaCheckCircle className="text-5xl" />
-                                </div>
-                                <h3 className="text-gray-900 text-2xl font-bold mb-2">Scan Successful</h3>
-                                <p className="text-gray-500">Processing your results...</p>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Progress Bar Bottom */}
-                    {ScanningState !== 'idle' && (
-                        <div className="absolute bottom-0 left-0 w-full h-1.5 bg-gray-100 z-30">
-                            <div 
-                                className="h-full bg-indigo-600 transition-all duration-200 ease-linear"
-                                style={{ width: `${progress}%` }}
-                            ></div>
-                        </div>
-                    )}
-                </div>
-
-                {/* Footer Controls / Status */}
-                 {(ScanningState === 'detecting' || ScanningState === 'scanning') && (
-                    <div className="flex justify-center">
-                        <button 
-                            onClick={() => {
-                                setScanningState('idle');
-                                stopCamera();
-                                setProgress(0);
-                                setIsFaceAligned(false);
-                                setMessage("Scan cancelled.");
-                            }}
-                            className="text-gray-400 hover:text-red-500 text-sm font-medium transition-colors flex items-center gap-2"
-                        >
-                            Cancel Assessment
-                        </button>
-                    </div>
-                 )}
+  return (
+    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-3xl mx-auto">
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+          <div className="px-6 py-8 sm:p-10">
+            <div className="text-center mb-8">
+              <h1 className="text-3xl font-extrabold text-gray-900">
+                Vital Signs Analysis
+              </h1>
+              <p className="mt-4 text-lg text-gray-500">
+                Record a 30-second video of your face or upload an existing one
+                to analyze your vital signs.
+              </p>
             </div>
-            
-            <style jsx global>{`
-                @keyframes scan-simple {
-                   0% { top: 0%; opacity: 0; }
-                   10% { opacity: 1; }
-                   90% { opacity: 1; }
-                   100% { top: 100%; opacity: 0; }
-                }
-                .animate-scan-simple {
-                    animation: scan-simple 2s ease-in-out infinite;
-                }
-                .animate-fade-in {
-                    animation: fadeIn 0.5s ease-out forwards;
-                }
-                @keyframes fadeIn {
-                    from { opacity: 0; transform: translateY(10px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
-            `}</style>
+
+            {/* Tabs */}
+            <div className="flex justify-center mb-8 border-b border-gray-200">
+              <button
+                onClick={() => setActiveTab("record")}
+                className={`px-6 py-3 text-sm font-medium flex items-center gap-2 border-b-2 transition-colors ${
+                  activeTab === "record"
+                    ? "border-indigo-600 text-indigo-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                <FaVideo /> Record Video
+              </button>
+              <button
+                onClick={() => setActiveTab("upload")}
+                className={`px-6 py-3 text-sm font-medium flex items-center gap-2 border-b-2 transition-colors ${
+                  activeTab === "upload"
+                    ? "border-indigo-600 text-indigo-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                <FaUpload /> Upload Video
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 min-h-[400px] flex flex-col items-center justify-center">
+              {activeTab === "record" ? (
+                <div className="w-full flex flex-col items-center">
+                  <div className="relative w-full max-w-md aspect-video bg-black rounded-lg overflow-hidden mb-6 shadow-inner">
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className={`w-full h-full object-cover ${
+                        file && !isRecording ? "hidden" : "block"
+                      }`}
+                    />
+                    {file && !isRecording && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-gray-900 text-white flex-col">
+                        <FaCheckCircle className="text-4xl text-green-500 mb-2" />
+                        <p>
+                          Recording saved (
+                          {file.size > 1024 * 1024
+                            ? (file.size / (1024 * 1024)).toFixed(1) + " MB"
+                            : Math.round(file.size / 1024) + " KB"}
+                          )
+                        </p>
+                        <button
+                          onClick={() => {
+                            setFile(null);
+                            startCamera();
+                          }}
+                          className="mt-4 text-sm text-indigo-400 hover:text-indigo-300 underline"
+                        >
+                          Record again
+                        </button>
+                      </div>
+                    )}
+                    {isRecording && (
+                      <>
+                        {/* Countdown timer badge */}
+                        <div className="absolute top-4 right-4 flex items-center gap-2 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium animate-pulse">
+                          <div className="w-2 h-2 bg-white rounded-full" />
+                          00:
+                          {(RECORDING_DURATION - recordingTime)
+                            .toString()
+                            .padStart(2, "0")}
+                        </div>
+                        {/* Progress bar at bottom */}
+                        <div className="absolute bottom-0 left-0 w-full h-1.5 bg-gray-800">
+                          <div
+                            className="h-full bg-red-500 transition-all duration-1000 ease-linear"
+                            style={{
+                              width: `${(recordingTime / RECORDING_DURATION) * 100}%`,
+                            }}
+                          />
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {isRecording && (
+                    <p className="text-sm text-gray-500 text-center">
+                      Recording for {RECORDING_DURATION} seconds. Please hold
+                      still and look at the camera.
+                    </p>
+                  )}
+                  {!file && !isRecording ? (
+                    <button
+                      onClick={startRecording}
+                      disabled={isAnalyzing}
+                      className="flex items-center gap-2 px-8 py-4 rounded-full font-bold text-white transition-all shadow-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <FaPlay /> Start Recording ({RECORDING_DURATION}s)
+                    </button>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="w-full flex flex-col items-center">
+                  <div className="w-full max-w-md mb-4 flex items-start gap-2 text-amber-700 bg-amber-50 px-4 py-3 rounded-lg border border-amber-200 text-sm">
+                    <FaExclamationTriangle className="flex-shrink-0 mt-0.5" />
+                    <p>
+                      For best results, upload a{" "}
+                      <strong>30-second video</strong> of your face with good
+                      lighting. Shorter or longer videos may produce less
+                      accurate results.
+                    </p>
+                  </div>
+                  <div className="w-full max-w-md border-2 border-dashed border-gray-300 rounded-xl p-12 text-center hover:border-indigo-500 transition-colors bg-white">
+                    <FaUpload className="mx-auto text-4xl text-gray-400 mb-4" />
+                    <p className="text-gray-600 mb-4">
+                      Drag and drop a video file here, or click to select
+                    </p>
+                    <input
+                      type="file"
+                      accept="video/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                      id="video-upload"
+                    />
+                    <label
+                      htmlFor="video-upload"
+                      className="cursor-pointer inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    >
+                      Select Video
+                    </label>
+                  </div>
+                  {file && (
+                    <div className="mt-6 flex items-center gap-3 text-green-600 bg-green-50 px-4 py-3 rounded-lg border border-green-200">
+                      <FaCheckCircle />
+                      <span className="font-medium truncate max-w-[250px]">
+                        {file.name}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="mt-6 flex items-center gap-3 text-red-600 bg-red-50 px-4 py-3 rounded-lg border border-red-200">
+                <FaExclamationTriangle className="flex-shrink-0" />
+                <p className="text-sm">{error}</p>
+              </div>
+            )}
+
+            {/* Action Button */}
+            <div className="mt-8 flex justify-center">
+              <button
+                onClick={handleScan}
+                disabled={!file || isAnalyzing || isRecording}
+                className={`w-full sm:w-auto flex items-center justify-center gap-3 px-12 py-4 rounded-xl font-bold text-lg text-white transition-all shadow-xl ${
+                  !file || isAnalyzing || isRecording
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 hover:scale-105"
+                }`}
+              >
+                {isAnalyzing ? (
+                  <>
+                    <FaSpinner className="animate-spin text-xl" />
+                    Analyzing Video...
+                  </>
+                ) : (
+                  "Scan & Analyze"
+                )}
+              </button>
+            </div>
+          </div>
         </div>
-    );
+      </div>
+    </div>
+  );
 };
 
 export default AnalysePage;
