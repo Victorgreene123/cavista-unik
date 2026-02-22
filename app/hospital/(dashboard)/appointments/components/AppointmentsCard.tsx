@@ -154,7 +154,7 @@ export default function AppointmentsCard({
                 </div>
               </div>
 
-              <div className="md:ml-6 md:w-48 text-sm text-gray-600">
+              <div className= "md:ml-6 md:w-48 text-sm text-gray-600">
                 {new Date(a.date).toLocaleString()}
               </div>
 
