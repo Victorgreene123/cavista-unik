@@ -5,9 +5,10 @@ import React, { useState } from "react";
 type Appointment = {
   id: string;
   name: string;
+  
   phone: string;
   date: string; // ISO or human readable
-  status: "unsettled" | "settled" | "cancelled";
+  status: string | "unsettled" | "settled" | "cancelled";
   report?: string;
 };
 
