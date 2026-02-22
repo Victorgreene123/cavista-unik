@@ -214,24 +214,7 @@ const SearchPage = () => {
                         )}
                     </div>
 
-                    {/* Sidebar */}
-                    <div className="hidden lg:block space-y-6">
-                        {/* Emergency Card */}
-                        <div className="bg-indigo-900 text-white p-6 rounded-3xl relative overflow-hidden shadow-xl">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500 rounded-full blur-3xl -mr-10 -mt-10 opacity-50"></div>
-                            
-                            <h3 className="text-lg font-bold mb-2 relative z-10 flex items-center gap-2">
-                                <FaPhoneAlt className="text-red-400"/> Emergency?
-                            </h3>
-                            <p className="text-indigo-200 text-sm mb-6 relative z-10">
-                                If experiencing severe symptoms, call emergency services immediately.
-                            </p>
-                            <a href="tel:911" className="block w-full text-center py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl transition-colors shadow-lg relative z-10">
-                                Call 911
-                            </a>
-                        </div>
-                    </div>
-
+                    
                 </div>
             </div>
         </div>
