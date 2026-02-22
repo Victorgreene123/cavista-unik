@@ -12,7 +12,6 @@ export async function GET(request: Request) {
       where: query ? {
         OR: [
           { name: { contains: query, mode: 'insensitive' } },
-          { specialization: { contains: query, mode: 'insensitive' } }, // Assuming simplified model for specialties
           { 
             doctors: {
               some: {

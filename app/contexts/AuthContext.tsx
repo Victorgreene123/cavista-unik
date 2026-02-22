@@ -1,8 +1,9 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 
-interface User {
+export interface User {
   id: string;
   email: string;
   role: 'INDIVIDUAL' | 'HOSPITAL_ADMIN' | 'DOCTOR';
@@ -24,7 +25,7 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  loading: boolean;
+  isLoading: boolean;
   login: (email: string, password: string, role: string) => Promise<void>;
   register: (email: string, password: string, role: string, profileData: any) => Promise<void>;
   logout: () => void;
@@ -33,49 +34,62 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
 
-  // Load user from localStorage on mount
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
+    const storedUser = localStorage.getItem('cavista_user');
     if (storedUser) {
       try {
         setUser(JSON.parse(storedUser));
       } catch (error) {
         console.error('Failed to parse stored user:', error);
-        localStorage.removeItem('user');
+        localStorage.removeItem('cavista_user');
       }
     }
-    setLoading(false);
+    setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string, role: string) => {
     try {
-      setLoading(true);
+      setIsLoading(true);
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, role }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Login failed');
+        throw new Error(data.error || 'Login failed');
       }
 
-      const data = await response.json();
       setUser(data.user);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('cavista_user', JSON.stringify(data.user));
+      
+      // Redirect based on role
+      console.log(data.user.role)
+      if (data.user.role === 'HOSPITAL_ADMIN') {
+        router.push('/hospital/dashboard');
+      } else if (data.user.role === 'INDIVIDUAL') {
+        router.push('/individual');
+      } else {
+         router.push('/');
+      }
+
+    } catch (error) {
+        throw error;
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   const register = async (email: string, password: string, role: string, profileData: any) => {
     try {
-      setLoading(true);
+      setIsLoading(true);
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -87,33 +101,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Registration failed');
+        throw new Error(data.error || 'Registration failed');
       }
 
-      const data = await response.json();
       setUser(data.user);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('cavista_user', JSON.stringify(data.user));
+       
+      // Redirect based on role
+      if (data.user.role === 'HOSPITAL_ADMIN') {
+        router.push('/hospital/dashboard');
+      } else if (data.user.role === 'INDIVIDUAL') {
+        router.push('/individual');
+      } else {
+        router.push('/');
+      }
+
+    } catch (error) {
+        throw error;
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('user');
+    localStorage.removeItem('cavista_user');
+    router.push('/auth/login');
   };
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        loading,
+        isLoading,
         login,
         register,
         logout,
-        isAuthenticated: user !== null,
+        isAuthenticated: !!user,
       }}
     >
       {children}
@@ -123,7 +150,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;

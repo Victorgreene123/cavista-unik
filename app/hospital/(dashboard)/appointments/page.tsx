@@ -1,78 +1,84 @@
-import React from "react";
+"use client";
+
+import React, { useEffect, useState } from "react";
 import AppointmentsCard from "./components/AppointmentsCard";
+import { useAuth } from "@/app/contexts/AuthContext";
 
-function randomDate(offsetDays = 0) {
-  const d = new Date();
-  d.setDate(d.getDate() + offsetDays);
-  d.setHours(9 + Math.floor(Math.random() * 8), 0, 0, 0);
-  return d.toISOString();
-}
+type APIAppointment = {
+  id: string;
+  individual: {
+    firstName: string;
+    lastName: string;
+  };
+  date: string;
+  status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
+  reason: string;
+  notes?: string;
+};
 
-const sample = [
-  {
-    id: "a1",
-    name: "Ada Lovelace",
-    phone: "+1 555-0101",
-    address: "12 Tech Lane",
-    date: randomDate(0),
-    status: "unsettled",
-    report: "Fever and cough",
-  },
-  {
-    id: "a2",
-    name: "Grace Hopper",
-    phone: "+1 555-0102",
-    address: "34 Code Ave",
-    date: randomDate(1),
-    status: "settled",
-    report: "Post-op check",
-  },
-  {
-    id: "a3",
-    name: "Alan Turing",
-    phone: "+1 555-0103",
-    address: "56 Logic St",
-    date: randomDate(2),
-    status: "settled",
-    report: "Headache and nausea",
-  },
-  {
-    id: "a4",
-    name: "Linus Torvalds",
-    phone: "+1 555-0104",
-    address: "78 Kernel Rd",
-    date: randomDate(3),
-    status: "unsettled",
-    report: "Wound inspection",
-  },
-  {
-    id: "a5",
-    name: "Margaret Hamilton",
-    phone: "+1 555-0105",
-    address: "90 Moon Blvd",
-    date: randomDate(4),
-    status: "cancelled",
-    report: "Scheduling conflict",
-  },
-];
+type CardAppointment = {
+  id: string;
+  name: string;
+  phone: string;
+  date: string;
+  status: "unsettled" | "settled" | "cancelled";
+  report?: string;
+};
 
-export default function Page() {
-  // show only unsettled patients
-  const unsettled = sample.filter((s) => s.status === "unsettled");
+export default function AppointmentsPage() {
+  const { user } = useAuth();
+  const [appData, setAppData] = useState<CardAppointment[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      if (!user) return;
+      
+      try {
+        const res = await fetch(`/api/appointments?userId=${user.id}&role=${user.role}`);
+        if (res.ok) {
+          const data: APIAppointment[] = await res.json();
+          
+          const mapped: CardAppointment[] = data.map((app) => {
+            let status: "unsettled" | "settled" | "cancelled" = "unsettled";
+            if (app.status === 'CONFIRMED' || app.status === 'COMPLETED') status = "settled";
+            if (app.status === 'CANCELLED') status = "cancelled";
+
+            return {
+                id: app.id,
+                name: `${app.individual?.firstName || 'Unknown'} ${app.individual?.lastName || ''}`,
+                phone: 'N/A', 
+                date: app.date,
+                status: status,
+                report: app.reason || 'No details'
+            };
+          });
+          
+          setAppData(mapped);
+        }
+      } catch (error) {
+        console.error("Failed to fetch appointments", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user) {
+        fetchAppointments();
+    }
+  }, [user]);
+
+  if (loading) {
+     return <div className="p-8">Loading appointments...</div>;
+  }
 
   return (
-    <div>
-      <AppointmentsCard
-        appointments={unsettled.map((s) => ({
-          id: s.id,
-          name: s.name,
-          phone: s.phone,
-          date: s.date,
-          status: s.status as any,
-          report: s.report,
-          address: s.address,
-        }))}
-      />
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-800">Appointments</h1>
+      </div>
+
+      <AppointmentsCard appointments={appData} />
     </div>
   );
 }

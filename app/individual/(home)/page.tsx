@@ -248,7 +248,10 @@ const HomePage = () => {
                         </div>
                         
                         <div className="space-y-4">
-                            <button className="w-full group bg-gray-50/50 hover:bg-white border border-transparent hover:border-gray-100 hover:shadow-lg hover:shadow-indigo-50/50 p-4 rounded-2xl flex items-center justify-between transition-all duration-300">
+                            <button 
+                                onClick={() => router.push('/individual/appointments/book')}
+                                className="w-full group bg-gray-50/50 hover:bg-white border border-transparent hover:border-gray-100 hover:shadow-lg hover:shadow-indigo-50/50 p-4 rounded-2xl flex items-center justify-between transition-all duration-300"
+                            >
                                 <div className="flex items-center gap-4">
                                     <div className="bg-white p-2.5 rounded-xl text-indigo-600 shadow-sm border border-gray-100 group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300">
                                         <FaCalendarCheck />
@@ -279,6 +282,73 @@ const HomePage = () => {
                             </button>
                         </div>
                     </div>
+                </div>
+
+                {/* Upcoming Appointments Section - New */}
+                <div className="lg:col-span-3 mt-8">
+                     <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                             <FaCalendarCheck className="text-indigo-500"/> My Appointments
+                        </h3>
+                        <Link href="/individual/appointments/book" className="text-indigo-600 text-sm font-bold hover:underline bg-indigo-50 px-4 py-2 rounded-lg">
+                            + Book New
+                        </Link>
+                    </div>
+
+                    {appointments.length === 0 ? (
+                        <div className="bg-white border border-dashed border-gray-200 rounded-3xl p-10 text-center">
+                            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <FaCalendarCheck className="text-gray-300 text-2xl" />
+                            </div>
+                            <h4 className="text-gray-900 font-bold mb-1">No upcoming appointments</h4>
+                            <p className="text-gray-500 text-sm mb-6">Your schedule is clear. Need to see a doctor?</p>
+                            <Link href="/individual/appointments/book" className="inline-flex items-center gap-2 bg-indigo-600 text-white font-bold px-6 py-3 rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200">
+                                Book an Appointment
+                            </Link>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {appointments.map((app: any) => (
+                                <div key={app.id} className="group bg-white rounded-3xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden">
+                                     <div className={`absolute top-0 right-0 w-24 h-24 -mr-8 -mt-8 rounded-full opacity-20 transition-colors ${
+                                        app.status === 'CONFIRMED' ? 'bg-green-500' : 
+                                        app.status === 'PENDING' ? 'bg-amber-500' : 'bg-red-500'
+                                    }`}></div>
+
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                            app.status === 'CONFIRMED' ? 'bg-green-50 text-green-600' : 
+                                            app.status === 'PENDING' ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'
+                                        }`}>
+                                            {app.status}
+                                        </div>
+                                    </div>
+
+                                    <h4 className="font-bold text-gray-900 mb-1 line-clamp-1">{app.hospital?.name || 'Unknown Hospital'}</h4>
+                                    <p className="text-gray-500 text-xs mb-4 line-clamp-1">{app.hospital?.address || 'No address provided'}</p>
+
+                                    <div className="bg-gray-50 rounded-xl p-3 mb-4">
+                                        <div className="flex items-center gap-3 text-sm text-gray-700 font-medium mb-2">
+                                            <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600">
+                                                <span className="font-bold">{new Date(app.date).getDate()}</span>
+                                            </div>
+                                            <div>
+                                                <span className="block text-xs text-gray-400 uppercase">Date & Time</span>
+                                                {new Date(app.date).toLocaleDateString()} at {new Date(app.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                                        <span className="text-xs font-semibold text-gray-400">Dr. {app.doctor?.firstName || 'Assigned soon'}</span>
+                                        <button className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-600 transition-colors">
+                                            <FaArrowRight className="text-xs" />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

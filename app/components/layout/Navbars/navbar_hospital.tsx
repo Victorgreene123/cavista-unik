@@ -50,7 +50,7 @@ export default function NavbarHospital({
                 className="w-9 h-9 rounded-full object-cover"
               />
             ) : (
-              <div className="w-9 h-9 rounded-full bg-indigo-600/80 flex items-center justify-center text-sm font-semibold text-white">
+              <div className="w-9 h-9 rounded-full bg-teal-600/80 flex items-center justify-center text-sm font-semibold text-white">
                 {initials}
               </div>
             )}

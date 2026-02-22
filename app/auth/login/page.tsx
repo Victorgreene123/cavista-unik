@@ -24,12 +24,6 @@ export default function LoginPage() {
             const role = userType === 'individual' ? 'INDIVIDUAL' : 'HOSPITAL_ADMIN';
             await login(email, password, role);
             
-            // Redirect based on role
-            if (userType === 'individual') {
-                router.push('/individual');
-            } else {
-                router.push('/hospital/dashboard');
-            }
         } catch (err: any) {
             setError(err.message || 'Login failed. Please try again.');
         } finally {

@@ -24,7 +24,7 @@ export default function Sidebar() {
     >
       {/* glossy gradient background */}
       <div
-        className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-indigo-500 to-indigo-400 opacity-95 shadow-lg rounded-r-2xl"
+        className="absolute inset-0 bg-gradient-to-br from-teal-600 via-teal-500 to-teal-400 opacity-95 shadow-lg rounded-r-2xl"
         aria-hidden
       />
       {/* subtle glossy overlay */}
@@ -114,7 +114,7 @@ export default function Sidebar() {
                   >
                     <span
                       className={
-                        "flex-none w-9 h-9 rounded-md flex items-center justify-center text-indigo-50 " +
+                        "flex-none w-9 h-9 rounded-md flex items-center justify-center text-teal-50 " +
                         (active
                           ? "bg-white/20"
                           : "bg-white/10 group-hover:bg-white/20")

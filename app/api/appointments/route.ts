@@ -11,27 +11,28 @@ export async function GET(request: Request) {
   if (!userId || !role) return NextResponse.json({ error: 'Missing userId or role' }, { status: 400 });
 
   try {
-    let whereClause = {};
+    let whereClause: any = {};
 
     if (role === 'INDIVIDUAL') {
-      whereClause = { individualId: userId };
+      const profile = await prisma.individualProfile.findUnique({ where: { userId } });
+      if (profile) whereClause.individualId = profile.id; 
+      else return NextResponse.json({ error: 'Individual profile not found' }, { status: 404 });
+
     } else if (role === 'DOCTOR') {
-      whereClause = { doctorId: userId };
+      const profile = await prisma.doctorProfile.findUnique({ where: { userId } });
+      if (profile) whereClause.doctorId = profile.id;
+      else return NextResponse.json({ error: 'Doctor profile not found' }, { status: 404 });
+
     } else if (role === 'HOSPITAL_ADMIN') {
-      // Find hospital first
-      const admin = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { hospitalProfile: { select: { id: true } } }
-      });
-      if (admin?.hospitalProfile?.id) {
-        whereClause = { hospitalId: admin.hospitalProfile.id };
-      }
+      const profile = await prisma.hospitalProfile.findUnique({ where: { userId } });
+      if (profile) whereClause.hospitalId = profile.id; 
+      else return NextResponse.json({ error: 'Hospital profile not found' }, { status: 404 });
     }
 
     const appointments = await prisma.appointment.findMany({
       where: whereClause,
       include: {
-        individual: { select: { firstName: true, lastName: true } },
+        individual: { select: { firstName: true, lastName: true, phoneNumber: true } },
         doctor: { select: { firstName: true, lastName: true, specialization: true } },
         hospital: { select: { name: true, address: true } }
       },
@@ -41,6 +42,7 @@ export async function GET(request: Request) {
     return NextResponse.json(appointments);
 
   } catch (error: any) {
+    console.error("Fetch Error:", error);
     return NextResponse.json({ error: 'Failed' }, { status: 500 });
   }
 }
@@ -48,11 +50,20 @@ export async function GET(request: Request) {
 // CREATE a new Appointment (Booking)
 export async function POST(request: Request) {
   try {
-    const { individualId, hospitalId, doctorId, date, reason, voiceNoteUrl } = await request.json();
+    const { userId, hospitalId, doctorId, date, reason, voiceNoteUrl } = await request.json();
+
+    // Get the Individual Profile ID from the User ID
+    const individualProfile = await prisma.individualProfile.findUnique({
+      where: { userId }
+    });
+
+    if (!individualProfile) {
+      return NextResponse.json({ error: 'Individual profile not found' }, { status: 404 });
+    }
 
     const newAppointment = await prisma.appointment.create({
       data: {
-        individualId,
+        individualId: individualProfile.id,
         hospitalId,
         doctorId, // optional
         date: new Date(date),
@@ -66,7 +77,7 @@ export async function POST(request: Request) {
 
   } catch (error: any) {
     console.error('Booking Error:', error);
-    return NextResponse.json({ error: 'Booking failed.' + error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Booking failed: ' + error.message }, { status: 500 });
   }
 }
 

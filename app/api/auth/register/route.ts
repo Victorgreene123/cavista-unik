@@ -20,44 +20,47 @@ export async function POST(request: Request) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create User and Profile in a transaction
-    const result = await prisma.$transaction(async (tx) => {
-      // 1. Create Base User
-      const user = await tx.user.create({
-        data: {
-          email,
-          password: hashedPassword,
-          role,
-        },
-      });
-
-      // 2. Create Specific Profile based on Role
-      if (role === 'INDIVIDUAL') {
-        const { firstName, lastName, phone } = profileData;
-        await tx.individualProfile.create({
-          data: {
-            userId: user.id,
-            firstName,
-            lastName,
-            phoneNumber: phone || null,
-          },
-        });
-      } else if (role === 'HOSPITAL_ADMIN') {
-        const { hospitalName, regNumber, phone } = profileData;
-        await tx.hospitalProfile.create({
-          data: {
-            userId: user.id,
-            name: hospitalName,
-            registrationNumber: regNumber,
-            contactPhone: phone || null,
-          },
-        });
-      }
-
-      return user;
+    // 1. Create Base User
+    const user = await prisma.user.create({
+      data: {
+      email,
+      password: hashedPassword,
+      role,
+      },
     });
 
-    return NextResponse.json({ success: true, userId: result.id });
+    // 2. Create Specific Profile based on Role
+    try {
+      if (role === 'INDIVIDUAL') {
+      const { firstName, lastName, phone } = profileData;
+      await prisma.individualProfile.create({
+        data: {
+        userId: user.id,
+        firstName,
+        lastName,
+        phoneNumber: phone || null,
+        },
+      });
+      } else if (role === 'HOSPITAL_ADMIN') {
+      const { hospitalName, regNumber, phone } = profileData;
+      await prisma.hospitalProfile.create({
+        data: {
+        userId: user.id,
+        name: hospitalName,
+        registrationNumber: regNumber,
+        contactPhone: phone || null,
+        },
+      });
+      }
+    } catch (profileError) {
+      // If profile creation fails, we might want to delete the user to keep data consistent (manual rollback)
+      await prisma.user.delete({ where: { id: user.id } });
+      throw profileError;
+    }
+
+    const { password: _, ...userData } = user;
+
+    return NextResponse.json({ success: true, user: userData, role });
   } catch (error: any) {
     console.error('Registration Error:', error);
     return NextResponse.json({ error: error.message || 'Registration failed' }, { status: 500 });
