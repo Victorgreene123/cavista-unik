@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-export default function Sidebar() {
+export default function Sidebar({ className }: { className?: string }) {
   const pathname = usePathname() || "/";
 
   const items = [
@@ -19,7 +19,7 @@ export default function Sidebar() {
 
   return (
     <aside
-      className="w-72 min-h-screen p-6 text-white relative overflow-hidden"
+      className={`w-72 min-h-screen p-6 text-white relative overflow-hidden ${className || ""}`}
       aria-label="Hospital sidebar"
     >
       {/* glossy gradient background */}

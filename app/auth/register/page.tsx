@@ -3,9 +3,52 @@
 import Link from "next/link";
 import { useState } from "react";
 import { FaUser, FaHospital, FaGoogle, FaApple, FaArrowRight, FaCheckCircle } from "react-icons/fa";
+import { useAuth } from "@/app/contexts/AuthContext";
 
 export default function RegisterPage() {
     const [userType, setUserType] = useState<'individual' | 'hospital'>('individual');
+    const { register, isLoading } = useAuth();
+    
+    // Form States
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
+    const [hospitalName, setHospitalName] = useState('');
+    const [regNumber, setRegNumber] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+
+        try {
+            let name = '';
+            if (userType === 'individual') {
+                if (!firstName || !lastName) {
+                    setError("Please enter your full name.");
+                    return;
+                }
+                name = `${firstName} ${lastName}`;
+            } else {
+                if (!hospitalName || !regNumber) {
+                    setError("Please provide Hospital Name and Registration Number.");
+                    return;
+                }
+                name = hospitalName; // You might want to store Reg Number too, but AuthContext only takes name for now.
+            }
+
+            if (!email || !password) {
+                setError("Please fill in all fields.");
+                return;
+            }
+
+            await register(email, password, name, userType);
+
+        } catch (err: any) {
+            setError(err.message || "Registration failed. Please try again.");
+        }
+    };
 
     return (
         <div className={`h-screen w-screen overflow-hidden transition-colors duration-700 flex items-center justify-center p-4 lg:p-8 ${userType === 'individual' ? 'bg-gradient-to-br from-indigo-50 via-white to-purple-50' : 'bg-gradient-to-br from-teal-50 via-white to-emerald-50'}`}>
@@ -22,12 +65,14 @@ export default function RegisterPage() {
                         ></div>
                         
                         <button 
+                            type="button"
                             onClick={() => setUserType('individual')}
                             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold relative z-10 transition-colors ${userType === 'individual' ? 'text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
                         >
                             <FaUser /> Individual
                         </button>
                         <button 
+                            type="button"
                             onClick={() => setUserType('hospital')}
                             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold relative z-10 transition-colors ${userType === 'hospital' ? 'text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
                         >
@@ -40,34 +85,86 @@ export default function RegisterPage() {
                             <h2 className="text-xl font-bold text-gray-900">Create Account</h2>
                             <p className="text-sm text-gray-500 mt-1">Join Cavista today.</p>
                         </div>
+                        
+                        {error && (
+                            <div className="bg-red-50 text-red-600 text-xs p-2 rounded text-center">
+                                {error}
+                            </div>
+                        )}
 
-                        <form className="space-y-3">
+                        <form className="space-y-3" onSubmit={handleSubmit}>
                             {userType === 'individual' ? (
                                 <>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="space-y-1.5">
                                             <label className="text-[10px] font-bold text-gray-700 ml-1 uppercase">First Name</label>
-                                            <input type="text" placeholder="John" className="w-full px-4 py-2.5 rounded-lg bg-gray-50 border border-gray-100 text-sm focus:bg-white outline-none transition-all duration-300 focus:border-indigo-500 focus:shadow-indigo-50" />
+                                            <input 
+                                                type="text" 
+                                                value={firstName}
+                                                onChange={(e) => setFirstName(e.target.value)}
+                                                placeholder="John" 
+                                                required
+                                                className="w-full px-4 py-2.5 rounded-lg bg-gray-50 border border-gray-100 text-sm focus:bg-white outline-none transition-all duration-300 focus:border-indigo-500 focus:shadow-indigo-50" 
+                                            />
                                         </div>
                                         <div className="space-y-1.5">
                                             <label className="text-[10px] font-bold text-gray-700 ml-1 uppercase">Last Name</label>
-                                            <input type="text" placeholder="Doe" className="w-full px-4 py-2.5 rounded-lg bg-gray-50 border border-gray-100 text-sm focus:bg-white outline-none transition-all duration-300 focus:border-indigo-500 focus:shadow-indigo-50" />
+                                            <input 
+                                                type="text"
+                                                value={lastName}
+                                                onChange={(e) => setLastName(e.target.value)}
+                                                placeholder="Doe" 
+                                                required
+                                                className="w-full px-4 py-2.5 rounded-lg bg-gray-50 border border-gray-100 text-sm focus:bg-white outline-none transition-all duration-300 focus:border-indigo-500 focus:shadow-indigo-50" 
+                                            />
                                         </div>
                                     </div>
                                     <div className="space-y-1.5">
                                         <label className="text-[10px] font-bold text-gray-700 ml-1 uppercase">Email Address</label>
-                                        <input type="email" placeholder="john@example.com" className="w-full px-4 py-2.5 rounded-lg bg-gray-50 border border-gray-100 text-sm focus:bg-white outline-none transition-all duration-300 focus:border-indigo-500 focus:shadow-indigo-50" />
+                                        <input 
+                                            type="email" 
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            placeholder="john@example.com" 
+                                            required
+                                            className="w-full px-4 py-2.5 rounded-lg bg-gray-50 border border-gray-100 text-sm focus:bg-white outline-none transition-all duration-300 focus:border-indigo-500 focus:shadow-indigo-50" 
+                                        />
                                     </div>
                                 </>
                             ) : (
                                 <>
                                     <div className="space-y-1.5">
                                         <label className="text-[10px] font-bold text-gray-700 ml-1 uppercase">Hospital Name</label>
-                                        <input type="text" placeholder="General Hospital" className="w-full px-4 py-2.5 rounded-lg bg-gray-50 border border-gray-100 text-sm focus:bg-white outline-none transition-all duration-300 focus:border-teal-500 focus:shadow-teal-50" />
+                                        <input 
+                                            type="text" 
+                                            value={hospitalName}
+                                            onChange={(e) => setHospitalName(e.target.value)}
+                                            placeholder="General Hospital" 
+                                            required
+                                            className="w-full px-4 py-2.5 rounded-lg bg-gray-50 border border-gray-100 text-sm focus:bg-white outline-none transition-all duration-300 focus:border-teal-500 focus:shadow-teal-50" 
+                                        />
                                     </div>
                                     <div className="space-y-1.5">
                                         <label className="text-[10px] font-bold text-gray-700 ml-1 uppercase">Reg. Number</label>
-                                        <input type="text" placeholder="Hv-12345" className="w-full px-4 py-2.5 rounded-lg bg-gray-50 border border-gray-100 text-sm focus:bg-white outline-none transition-all duration-300 focus:border-teal-500 focus:shadow-teal-50" />
+                                        <input 
+                                            type="text" 
+                                            value={regNumber}
+                                            onChange={(e) => setRegNumber(e.target.value)}
+                                            placeholder="Hv-12345" 
+                                            required
+                                            className="w-full px-4 py-2.5 rounded-lg bg-gray-50 border border-gray-100 text-sm focus:bg-white outline-none transition-all duration-300 focus:border-teal-500 focus:shadow-teal-50" 
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-bold text-gray-700 ml-1 uppercase">Email Address</label>
+                                        <input 
+                                            type="email" 
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            placeholder="admin@hospital.com" 
+                                            required
+                                            className="w-full px-4 py-2.5 rounded-lg bg-gray-50 border border-gray-100 text-sm focus:bg-white outline-none transition-all duration-300 focus:border-teal-500 focus:shadow-teal-50" 
+                                        />
                                     </div>
                                 </>
                             )}
@@ -76,18 +173,23 @@ export default function RegisterPage() {
                                 <label className="text-[10px] font-bold text-gray-700 ml-1 uppercase">Password</label>
                                 <input
                                     type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
                                     placeholder="••••••••"
+                                    required
                                     className={`w-full px-4 py-2.5 rounded-lg bg-gray-50 border border-gray-100 text-sm focus:bg-white outline-none transition-all duration-300 ${userType === 'individual' ? 'focus:border-indigo-500 focus:shadow-indigo-50' : 'focus:border-teal-500 focus:shadow-teal-50'}`}
                                 />
                             </div>
 
                             <button
                                 type="submit"
-                                className={`w-full py-3 rounded-xl text-white font-bold text-sm shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2 mt-2 ${userType === 'individual' ? 'bg-indigo-600 shadow-indigo-200' : 'bg-teal-600 shadow-teal-200'}`}
+                                disabled={isLoading}
+                                className={`w-full py-3 rounded-xl text-white font-bold text-sm shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2 mt-2 ${userType === 'individual' ? 'bg-indigo-600 shadow-indigo-200' : 'bg-teal-600 shadow-teal-200'} ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
                             >
-                                <span className="uppercase tracking-wide text-xs">Create Account</span> <FaArrowRight className="text-xs" />
+                                <span className="uppercase tracking-wide text-xs">{isLoading ? 'Creating Account...' : 'Create Account'}</span> <FaArrowRight className="text-xs" />
                             </button>
                         </form>
+
 
                         <div className="relative text-center my-4">
                             <div className="absolute inset-0 flex items-center">

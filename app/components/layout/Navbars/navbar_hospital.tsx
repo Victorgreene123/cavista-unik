@@ -2,6 +2,8 @@
 
 import React from "react";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/app/contexts/AuthContext";
+import { MdLogout } from "react-icons/md";
 
 type Props = {
   hospitalName?: string;
@@ -12,11 +14,14 @@ export default function NavbarHospital({
   hospitalName = "Your Hospital",
   logoSrc,
 }: Props) {
+  const { user, logout } = useAuth();
+  const displayName = user?.type === 'hospital' ? user.name : hospitalName;
+
   const pathname = usePathname() || "/";
 
   const title = getPageTitle(pathname);
 
-  const initials = getInitials(hospitalName);
+  const initials = getInitials(displayName);
 
   return (
     <header
@@ -33,7 +38,7 @@ export default function NavbarHospital({
         <div className="flex items-center gap-3">
           <div className="hidden sm:flex flex-col text-right mr-2">
             <span className="text-sm font-medium text-gray-900">
-              {hospitalName}
+              {displayName}
             </span>
             <span className="text-xs text-gray-600">Hospital profile</span>
           </div>
@@ -50,27 +55,18 @@ export default function NavbarHospital({
                 className="w-9 h-9 rounded-full object-cover"
               />
             ) : (
-              <div className="w-9 h-9 rounded-full bg-indigo-600/80 flex items-center justify-center text-sm font-semibold text-white">
-                {initials}
-              </div>
+                <div className="w-9 h-9 flex items-center justify-center bg-teal-100 text-teal-700 rounded-full font-bold">
+                    {initials}
+                </div>
             )}
-
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              className="text-gray-700"
-              aria-hidden
-            >
-              <path
-                d="M6 9l6 6 6-6"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+          </button>
+          
+          <button 
+            onClick={logout}
+            className="ml-2 p-2 text-gray-500 hover:text-red-600 transition-colors"
+            title="Logout"
+          >
+            <MdLogout className="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -93,20 +89,7 @@ function prettifyLastSegment(path: string) {
 }
 
 function getInitials(name = ""): string {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
+  const [first, second] = name.split(" ");
+  return (first?.[0] || "") + (second?.[0] || "");
 }
 
-function formatPath(path: string) {
-  return path === "" || path === "/" ? "Home" : path;
-}
-
-function PATH_CLEAN(p: string) {
-  const pieces = p.split("/").filter(Boolean);
-  if (pieces.length <= 2) return `/${pieces.join("/")}`;
-  return `/${pieces[0]}/.../${pieces[pieces.length - 1]}`;
-}

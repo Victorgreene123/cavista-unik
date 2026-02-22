@@ -3,9 +3,24 @@
 import Link from "next/link";
 import { useState } from "react";
 import { FaUser, FaHospital, FaGoogle, FaApple, FaArrowRight } from "react-icons/fa";
+import { useAuth } from "@/app/contexts/AuthContext";
 
 export default function LoginPage() {
     const [userType, setUserType] = useState<'individual' | 'hospital'>('individual');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const { login, isLoading } = useAuth();
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+        try {
+            await login(email, password, userType);
+        } catch (err: any) {
+            setError(err.message || 'Login failed. Please check your credentials.');
+        }
+    };
 
     return (
         <div className={`h-screen w-screen overflow-hidden transition-colors duration-700 flex items-center justify-center p-4 lg:p-8 ${userType === 'individual' ? 'bg-gradient-to-br from-indigo-50 via-white to-purple-50' : 'bg-gradient-to-br from-teal-50 via-white to-emerald-50'}`}>
@@ -109,14 +124,23 @@ export default function LoginPage() {
                             <h2 className="text-xl font-bold text-gray-900">Welcome Back</h2>
                             <p className="text-sm text-gray-500 mt-1">Sign in to continue.</p>
                         </div>
+                        
+                        {error && (
+                            <div className="text-red-500 text-xs bg-red-50 p-2 rounded text-center">
+                                {error}
+                            </div>
+                        )}
 
-                        <form className="space-y-4">
+                        <form className="space-y-4" onSubmit={handleSubmit}>
                             <div className="space-y-1.5">
                                 <label className="text-xs font-bold text-gray-700 ml-1">Email</label>
                                 <input
                                     type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
                                     placeholder={userType === 'individual' ? "you@example.com" : "admin@hospital.com"}
                                     className={`w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-100 text-sm focus:bg-white outline-none transition-all duration-300 ${userType === 'individual' ? 'focus:border-indigo-500 focus:shadow-indigo-50' : 'focus:border-teal-500 focus:shadow-teal-50'}`}
+                                    required
                                 />
                             </div>
 
@@ -124,8 +148,11 @@ export default function LoginPage() {
                                 <label className="text-xs font-bold text-gray-700 ml-1">Password</label>
                                 <input
                                     type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
                                     placeholder="••••••••"
                                     className={`w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-100 text-sm focus:bg-white outline-none transition-all duration-300 ${userType === 'individual' ? 'focus:border-indigo-500 focus:shadow-indigo-50' : 'focus:border-teal-500 focus:shadow-teal-50'}`}
+                                    required
                                 />
                             </div>
 
@@ -139,9 +166,10 @@ export default function LoginPage() {
 
                             <button
                                 type="submit"
-                                className={`w-full py-3 rounded-xl text-white font-bold text-sm shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2 ${userType === 'individual' ? 'bg-indigo-600 shadow-indigo-200' : 'bg-teal-600 shadow-teal-200'}`}
+                                disabled={isLoading}
+                                className={`w-full py-3 rounded-xl text-white font-bold text-sm shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2 ${userType === 'individual' ? 'bg-indigo-600 shadow-indigo-200' : 'bg-teal-600 shadow-teal-200'} ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
                             >
-                                Sign In <FaArrowRight className="text-xs" />
+                                {isLoading ? 'Signing In...' : 'Sign In'} <FaArrowRight className="text-xs" />
                             </button>
                         </form>
 
@@ -153,10 +181,10 @@ export default function LoginPage() {
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
-                            <button className="flex items-center justify-center gap-2 py-2.5 border border-gray-200 rounded-xl font-bold text-xs text-gray-700 hover:bg-gray-50 transition-all">
+                            <button type="button" className="flex items-center justify-center gap-2 py-2.5 border border-gray-200 rounded-xl font-bold text-xs text-gray-700 hover:bg-gray-50 transition-all">
                                 <FaGoogle className="text-red-500" /> Google
                             </button>
-                            <button className="flex items-center justify-center gap-2 py-2.5 border border-gray-200 rounded-xl font-bold text-xs text-gray-700 hover:bg-gray-50 transition-all">
+                            <button type="button" className="flex items-center justify-center gap-2 py-2.5 border border-gray-200 rounded-xl font-bold text-xs text-gray-700 hover:bg-gray-50 transition-all">
                                 <FaApple className="text-black" /> Apple
                             </button>
                         </div>
