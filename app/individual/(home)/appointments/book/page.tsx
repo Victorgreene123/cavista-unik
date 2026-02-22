@@ -173,25 +173,62 @@ const BookAppointmentPage = () => {
         }
     };
 
-    const handleSubmitBooking = () => {
-        // Here you would send the booking data + AI report to your backend
-        const bookingDetails = {
-            id: Math.random().toString(36).substr(2, 9),
-            doctor: doctor.name,
-            role: doctor.role,
-            hospital: doctor.hospital,
-            date: selectedDate.toDateString(),
-            slot: selectedSlot,
-            transcript: transcript,
-            report: aiReport
-        };
-        
-        // Save to local storage to simulate backend persistence for dashboard
-        const existing = JSON.parse(localStorage.getItem('my_appointments') || '[]');
-        localStorage.setItem('my_appointments', JSON.stringify([bookingDetails, ...existing]));
+    const handleSubmitBooking = async () => {
+        try {
+            // Get user from context/localStorage
+            const userStr = localStorage.getItem('user');
+            const user = userStr ? JSON.parse(userStr) : null;
+            
+            if (!user || !user.id) {
+                alert('Please log in first');
+                return;
+            }
 
-        // Show Success UI
-        setStep(3);
+            // Create appointment
+            const appointmentData = {
+                individualId: user.id,
+                doctorId: doctorId, // Get from search params
+                date: selectedDate.toISOString(),
+                timeSlot: selectedSlot,
+                notes: transcript || '',
+                status: 'SCHEDULED'
+            };
+
+            const response = await fetch('/api/appointments', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(appointmentData),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to book appointment');
+            }
+
+            const appointment = await response.json();
+
+            // If we have a medical report, save it
+            if (aiReport && user.id) {
+                const reportData = {
+                    individualId: user.id,
+                    title: `Pre-Consultation Report - ${doctor.name}`,
+                    aiAnalysis: aiReport,
+                    transcript: transcript,
+                    audioUrl: audioUrl
+                };
+
+                await fetch('/api/reports', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(reportData),
+                });
+            }
+
+            // Show Success UI
+            setStep(3);
+        } catch (error) {
+            console.error('Booking error:', error);
+            alert('Failed to book appointment. Please try again.');
+        }
     };
 
     const formatTime = (seconds: number) => {

@@ -2,25 +2,49 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { FaHeartbeat, FaTint, FaLungs, FaBrain, FaSearchLocation, FaArrowRight, FaCalendarCheck, FaFileMedical } from 'react-icons/fa';
 import { MdHealthAndSafety, MdBloodtype } from "react-icons/md";
 import { IoScanCircleOutline } from "react-icons/io5";
 import { GoGraph } from "react-icons/go";
 import HomeSkeleton from '@/app/components/skeletons/HomeSkeleton';
+import { useAuth } from '@/app/contexts/AuthContext';
 
 const HomePage = () => {
     const [isLoading, setIsLoading] = useState(true);
+    const [appointments, setAppointments] = useState([]);
+    const { user, isAuthenticated } = useAuth();
+    const router = useRouter();
 
     useEffect(() => {
-        // Simulate data loading
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 1500);
-        return () => clearTimeout(timer);
-    }, []);
+        // Redirect to login if not authenticated
+        if (!isAuthenticated) {
+            router.push('/auth/login');
+            return;
+        }
 
-    // Mock user name - in a real app, fetch from auth context
-    const userName = "Alex";
+        // Load appointments
+        const loadAppointments = async () => {
+            try {
+                if (user?.id) {
+                    const response = await fetch(`/api/appointments?userId=${user.id}&role=INDIVIDUAL`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        setAppointments(data);
+                    }
+                }
+                setIsLoading(false);
+            } catch (error) {
+                console.error('Failed to load appointments:', error);
+                setIsLoading(false);
+            }
+        };
+
+        loadAppointments();
+    }, [user, isAuthenticated, router]);
+
+    // Get user name from profile
+    const userName = user?.individualProfile?.firstName || "User";
     
     // Get time of day for greeting
     const hour = new Date().getHours();
