@@ -1,9 +1,17 @@
 {
+  "name": "cavista-unik-backend",
+  "version": "1.0.0",
+  "description": "Cavista Unik Backend Service",
+  "main": "main.js",
   "scripts": {
     "start": "node main.js",
     "dev": "node --watch main.js",
+    "build": "echo 'No build step required for this plain Node.js app'",
     "use:api": "node use-api.js",
     "use:api:resource": "node use-api.js resource/video.MOV true"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "dependencies": {
     "@tensorflow/tfjs": "^4.22.0",

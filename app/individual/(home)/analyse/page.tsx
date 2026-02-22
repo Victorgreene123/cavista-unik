@@ -143,7 +143,7 @@ const AnalysePage = () => {
       formData.append("fps", "30");
 
       const response = await fetch(
-        "http://localhost:3000/api/vitallens/analyze-video",
+        "https://cavista-unik-pfdf.onrender.com/api/vitallens/analyze-video",
         {
           method: "POST",
           body: formData,

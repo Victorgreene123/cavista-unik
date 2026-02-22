@@ -30,7 +30,7 @@ const NavbarIndividual = () => {
                             <MdHealthAndSafety size={24} />
                         </div>
                         <span className="font-bold text-xl tracking-tight text-gray-800">
-                            Cavista<span className="text-indigo-600">Health</span>
+                            Vital<span className="text-indigo-600">Scan</span>
                         </span>
                     </div>
 

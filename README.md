@@ -1,8 +1,8 @@
-# Cavista-Unik 🏥✨
+# Vital-Scan 🏥✨
 
 **The Future of Smart Healthcare Management & Personal Wellness.**
 
-Cavista-Unik is a modern, AI-powered healthcare platform designed to bridge the gap between patients and medical providers. It features a dual-persona interface that serves both **Individuals (Patients)** seeking personal health insights and **Hospitals (Providers)** managing clinical operations.
+Vital-Scan is a modern, AI-powered healthcare platform designed to bridge the gap between patients and medical providers. It features a dual-persona interface that serves both **Individuals (Patients)** seeking personal health insights and **Hospitals (Providers)** managing clinical operations.
 
 ---
 
@@ -36,7 +36,7 @@ Cavista-Unik is a modern, AI-powered healthcare platform designed to bridge the 
 ## 📂 Project Structure
 
 ```bash
-cavista-unik/
+Vital-Scan/
 ├── app/
 │   ├── auth/                 # Authentication Routes (Login/Register)
 │   │   ├── login/            # Dual-persona Login Page
@@ -69,8 +69,8 @@ Both modes are fully **responsive**, featuring a strict `100vh` layout on mobile
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/your-username/cavista-unik.git
-    cd cavista-unik
+    git clone https://github.com/your-username/Vital-Scan.git
+    cd Vital-Scan
     ```
 
 2.  **Install dependencies:**
@@ -86,7 +86,7 @@ Both modes are fully **responsive**, featuring a strict `100vh` layout on mobile
     ```
 
 4.  **Open your browser:**
-    Navigate to [http://localhost:3000](http://localhost:3000)
+    Navigate to [https://Vital-Scan.onrender.com](https://Vital-Scan.onrender.com)
 
 ---
 
@@ -103,4 +103,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ---
 
-*Powered by Cavista-Unik Team © 2026*
+*Powered by Vital-Scan Team © 2026*

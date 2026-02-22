@@ -60,7 +60,7 @@ export default function Sidebar() {
               </svg>
             </div>
             <div>
-              <span className="text-sm font-bold">Cavista Health</span>
+              <span className="text-sm font-bold">VitalScan</span>
             </div>
           </div>
         </div>

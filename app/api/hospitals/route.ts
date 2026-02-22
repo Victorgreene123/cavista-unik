@@ -28,7 +28,7 @@ export async function GET(request: Request) {
         // Include summary data needed for cards
         doctors: {
           take: 3, 
-          select: { firstName: true, specialization: true } 
+          select: { id: true, firstName: true, lastName: true, specialization: true } 
         }
       }
     });

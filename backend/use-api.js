@@ -2,7 +2,7 @@ import "dotenv/config";
 import { promises as fs } from "fs";
 import path from "path";
 
-const apiBaseUrl = process.env.OPEN_RPPG_API_URL || "http://localhost:3000";
+const apiBaseUrl = process.env.OPEN_RPPG_API_URL || "https://cavista-unik-pfdf.onrender.com";
 const endpoint = `${apiBaseUrl}/api/vitallens/analyze-video`;
 
 const cliArgs = process.argv.slice(2);
