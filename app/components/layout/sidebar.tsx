@@ -36,9 +36,26 @@ export default function Sidebar() {
         <div className="mb-4">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-md bg-white/10 flex items-center justify-center">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <path d="M3 11.5L12 4l9 7.5" stroke="#ffffff" strokeWidth="1.4" strokeLinecap="round" />
-                <path d="M5 11.5v7.5h14v-7.5" stroke="#ffffff" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden
+              >
+                <path
+                  d="M3 11.5L12 4l9 7.5"
+                  stroke="#ffffff"
+                  strokeWidth="1.4"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M5 11.5v7.5h14v-7.5"
+                  stroke="#ffffff"
+                  strokeWidth="1.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </div>
             <div>
@@ -49,9 +66,26 @@ export default function Sidebar() {
 
         <header className="mb-6 flex items-center gap-4">
           <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center ring-1 ring-white/30">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
-              <path d="M3 11.5L12 4l9 7.5" stroke="#ffffff" strokeWidth="1.6" strokeLinecap="round" />
-              <path d="M5 11.5v7.5h14v-7.5" stroke="#ffffff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            <svg
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden
+            >
+              <path
+                d="M3 11.5L12 4l9 7.5"
+                stroke="#ffffff"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+              />
+              <path
+                d="M5 11.5v7.5h14v-7.5"
+                stroke="#ffffff"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
           </div>
           <div>
