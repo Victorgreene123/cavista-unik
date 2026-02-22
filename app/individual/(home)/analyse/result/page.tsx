@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
@@ -183,7 +183,7 @@ function fmt(v: number | undefined | null, fallback = "n/a"): string {
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
-const ResultPage = () => {
+const ResultContent = () => {
   const searchParams = useSearchParams();
 
   const data = useMemo<AnalysisData | null>(() => {
@@ -597,6 +597,20 @@ const ResultPage = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+const ResultPage = () => {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      }
+    >
+      <ResultContent />
+    </Suspense>
   );
 };
 

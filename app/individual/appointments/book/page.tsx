@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Calendar from 'react-calendar';
@@ -44,7 +44,7 @@ const checkAvailability = async (date: Date, doctorId: string) => {
     });
 };
 
-const BookAppointmentPage = () => {
+const BookAppointmentContent = () => {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { user } = useAuth();
@@ -540,5 +540,19 @@ const BookAppointmentPage = () => {
         </div>
     );
 };
+
+const BookAppointmentPage = () => {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div></div>
+        }>
+            <BookAppointmentContent />
+        </Suspense>
+    );
+};
+
+
+
 
 export default BookAppointmentPage;

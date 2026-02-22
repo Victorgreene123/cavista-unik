@@ -8,7 +8,7 @@ export default function Sidebar() {
   const pathname = usePathname() || "/";
 
   const items = [
-    { href: "/hospital/facilities", label: "Facilities", icon: facilitiesIcon },
+    
     { href: "/hospital/wards", label: "Wards", icon: wardsIcon },
     {
       href: "/hospital/appointments",
