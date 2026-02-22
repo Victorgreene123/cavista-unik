@@ -1,0 +1,17 @@
+{
+  "scripts": {
+    "start": "node main.js",
+    "dev": "node --watch main.js",
+    "use:api": "node use-api.js",
+    "use:api:resource": "node use-api.js resource/video.MOV true"
+  },
+  "dependencies": {
+    "@tensorflow/tfjs": "^4.22.0",
+    "cors": "^2.8.6",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "multer": "^2.0.2",
+    "vitallens": "^0.3.2"
+  },
+  "type": "module"
+}

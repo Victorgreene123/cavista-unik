@@ -8,42 +8,50 @@ import {
   FaLungs,
   FaBrain,
   FaChevronRight,
-  FaArrowUp,
-  FaArrowDown,
+  FaCheckCircle,
+  FaTimesCircle,
+  FaInfoCircle,
 } from "react-icons/fa";
-import {
-  MdBloodtype,
-  MdOutlineHealthAndSafety,
-  MdTrendingUp,
-  MdTrendingDown,
-  MdTrendingFlat,
-} from "react-icons/md";
+import { MdBloodtype, MdOutlineHealthAndSafety } from "react-icons/md";
 import { IoArrowBack } from "react-icons/io5";
 
-interface HRData {
-  current_hr: number;
-  avg_hr: number;
-  history: number[];
+/* ------------------------------------------------------------------ */
+/*  Types matching the URL payload built in analyse/page.tsx           */
+/* ------------------------------------------------------------------ */
+interface Metric {
+  value?: number | null;
+  unit?: string;
+  confidence?: number | null;
 }
 
-// Analytics helper functions
-function calculateHRV(history: number[]): number {
-  // RMSSD (Root Mean Square of Successive Differences) - standard HRV metric
-  if (history.length < 2) return 0;
-  let sumSquaredDiff = 0;
-  for (let i = 1; i < history.length; i++) {
-    const diff = history[i] - history[i - 1];
-    sumSquaredDiff += diff * diff;
-  }
-  return Math.sqrt(sumSquaredDiff / (history.length - 1));
+interface AnalysisData {
+  vital_signs?: {
+    heart_rate?: Metric;
+    respiratory_rate?: Metric;
+    hrv_sdnn?: Metric;
+    hrv_rmssd?: Metric;
+    hrv_lfhf?: Metric;
+  };
+  processing_status?: {
+    face_detected?: boolean;
+    signal_quality?: string;
+    avg_face_confidence?: number;
+    issues?: string[];
+  };
+  preprocessing?: {
+    input_frames?: number;
+    fps_used?: number | null;
+    resolution?: string;
+    pixel_format?: string;
+  };
+  model_used?: string;
+  message?: string;
 }
 
-function getHRStatus(hr: number): {
-  status: string;
-  color: string;
-  bg: string;
-  desc: string;
-} {
+/* ------------------------------------------------------------------ */
+/*  Status helpers                                                     */
+/* ------------------------------------------------------------------ */
+function getHRStatus(hr: number) {
   if (hr < 60)
     return {
       status: "Low",
@@ -73,33 +81,43 @@ function getHRStatus(hr: number): {
   };
 }
 
-function getHRVStatus(hrv: number): {
-  status: string;
-  color: string;
-  bg: string;
-  desc: string;
-} {
-  // HRV interpretation based on RMSSD values
-  if (hrv < 10)
+function getRRStatus(rr: number) {
+  if (rr < 12)
+    return {
+      status: "Low",
+      color: "text-amber-600",
+      bg: "bg-amber-50",
+      desc: "Below normal resting rate",
+    };
+  if (rr <= 20)
+    return {
+      status: "Normal",
+      color: "text-green-600",
+      bg: "bg-green-50",
+      desc: "Within optimal resting range (12-20 breaths/min)",
+    };
+  return {
+    status: "High",
+    color: "text-red-600",
+    bg: "bg-red-50",
+    desc: "Above normal resting rate",
+  };
+}
+
+function getHRVStatus(hrv: number) {
+  if (hrv < 20)
     return {
       status: "Low",
       color: "text-amber-600",
       bg: "bg-amber-50",
       desc: "Low variability - may indicate stress or fatigue",
     };
-  if (hrv <= 25)
+  if (hrv <= 50)
     return {
       status: "Moderate",
       color: "text-green-600",
       bg: "bg-green-50",
       desc: "Moderate variability - good autonomic function",
-    };
-  if (hrv <= 50)
-    return {
-      status: "Good",
-      color: "text-green-600",
-      bg: "bg-green-50",
-      desc: "Good variability - healthy heart rate dynamics",
     };
   return {
     status: "High",
@@ -109,20 +127,28 @@ function getHRVStatus(hrv: number): {
   };
 }
 
-function getStressLevel(
-  hrv: number,
-  hrVariance: number,
-): { level: string; color: string; bg: string; desc: string } {
-  // Lower HRV and higher HR variance typically indicate stress
-  const stressScore = (50 - Math.min(hrv, 50)) / 50 + hrVariance / 30;
-  if (stressScore < 0.4)
+function getStressLevel(hr: number, rr: number) {
+  // Calculate stress based on Heart Rate and Respiratory Rate
+  // High HR + High RR = High Stress
+  // Normal HR + Normal RR = Low Stress
+  let stressScore = 0;
+
+  if (hr > 100) stressScore += 2;
+  else if (hr > 85) stressScore += 1;
+  else if (hr < 60) stressScore += 1; // Bradycardia can also be a stressor
+
+  if (rr > 20) stressScore += 2;
+  else if (rr > 16) stressScore += 1;
+  else if (rr < 12) stressScore += 1;
+
+  if (stressScore <= 1)
     return {
       level: "Low",
       color: "text-green-600",
       bg: "bg-green-50",
       desc: "Relaxed state - good autonomic balance",
     };
-  if (stressScore < 0.7)
+  if (stressScore <= 2)
     return {
       level: "Moderate",
       color: "text-amber-600",
@@ -137,88 +163,59 @@ function getStressLevel(
   };
 }
 
-function getTrend(history: number[]): "up" | "down" | "stable" {
-  if (history.length < 5) return "stable";
-  const firstHalf = history.slice(0, Math.floor(history.length / 2));
-  const secondHalf = history.slice(Math.floor(history.length / 2));
-  const firstAvg = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
-  const secondAvg = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
-  const diff = secondAvg - firstAvg;
-  if (Math.abs(diff) < 3) return "stable";
-  return diff > 0 ? "up" : "down";
-}
-
-function calculateOverallScore(
-  hr: number,
-  hrv: number,
-  stressLevel: string,
-): number {
+function calculateOverallScore(hr: number, rr: number): number {
   let score = 100;
-
-  // Heart rate score (ideal: 60-80 bpm)
   if (hr < 60) score -= (60 - hr) * 1.5;
   else if (hr > 100) score -= (hr - 100) * 2;
   else if (hr > 80) score -= (hr - 80) * 0.5;
 
-  // HRV score (higher is better, up to a point)
-  if (hrv < 10) score -= 15;
-  else if (hrv < 20) score -= 5;
-  else if (hrv > 30) score += 5;
-
-  // Stress penalty
-  if (stressLevel === "High") score -= 15;
-  else if (stressLevel === "Moderate") score -= 5;
+  if (rr < 12) score -= (12 - rr) * 2;
+  else if (rr > 20) score -= (rr - 20) * 2;
 
   return Math.max(0, Math.min(100, Math.round(score)));
 }
 
+function fmt(v: number | undefined | null, fallback = "n/a"): string {
+  if (v === null || v === undefined || Number.isNaN(v)) return fallback;
+  return String(Math.round(v * 100) / 100);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Component                                                          */
+/* ------------------------------------------------------------------ */
 const ResultPage = () => {
   const searchParams = useSearchParams();
 
-  // Parse HR data from URL
-  const hrData = useMemo<HRData | null>(() => {
-    const dataParam = searchParams.get("data");
-    if (!dataParam) return null;
+  const data = useMemo<AnalysisData | null>(() => {
+    const param = searchParams.get("data");
+    if (!param) return null;
     try {
-      return JSON.parse(decodeURIComponent(dataParam)) as HRData;
+      return JSON.parse(decodeURIComponent(param)) as AnalysisData;
     } catch {
       return null;
     }
   }, [searchParams]);
 
-  // Calculate all analytics
   const analytics = useMemo(() => {
-    if (!hrData) return null;
-
-    const { current_hr, avg_hr, history } = hrData;
-    const hrv = calculateHRV(history);
-    const minHR = Math.min(...history);
-    const maxHR = Math.max(...history);
-    const variance = maxHR - minHR;
-    const hrStatus = getHRStatus(avg_hr);
-    const hrvStatus = getHRVStatus(hrv);
-    const stress = getStressLevel(hrv, variance);
-    const trend = getTrend(history);
-    const overallScore = calculateOverallScore(avg_hr, hrv, stress.level);
+    if (!data?.vital_signs) return null;
+    const vs = data.vital_signs;
+    const hr = vs.heart_rate?.value ?? 0;
+    const rr = vs.respiratory_rate?.value ?? 0;
 
     return {
-      current_hr: Math.round(current_hr * 10) / 10,
-      avg_hr: Math.round(avg_hr * 10) / 10,
-      hrv: Math.round(hrv * 10) / 10,
-      minHR: Math.round(minHR * 10) / 10,
-      maxHR: Math.round(maxHR * 10) / 10,
-      variance: Math.round(variance * 10) / 10,
-      hrStatus,
-      hrvStatus,
-      stress,
-      trend,
-      overallScore,
-      samples: history.length,
+      hr: Math.round(hr * 10) / 10,
+      rr: Math.round(rr * 10) / 10,
+      hrStatus: getHRStatus(hr),
+      rrStatus: getRRStatus(rr),
+      stress: getStressLevel(hr, rr),
+      overallScore: calculateOverallScore(hr, rr),
+      hrConfidence: vs.heart_rate?.confidence,
+      rrConfidence: vs.respiratory_rate?.confidence,
     };
-  }, [hrData]);
+  }, [data]);
 
-  // Fallback if no data
-  if (!hrData || !analytics) {
+  /* No data at all */
+  if (!data || !analytics) {
     return (
       <div className="min-h-screen bg-gray-50 p-4 md:p-8 flex items-center justify-center">
         <div className="text-center">
@@ -236,69 +233,35 @@ const ResultPage = () => {
     );
   }
 
+  const ps = data.processing_status;
+  const pp = data.preprocessing;
+  const overallScore = analytics.overallScore;
+
+  /* Vitals cards data */
   const biometricData = [
     {
       id: "heart-rate",
       label: "Heart Rate",
-      value: analytics.avg_hr,
+      value: analytics.hr,
       unit: "bpm",
+      confidence: analytics.hrConfidence,
       status: analytics.hrStatus.status,
       icon: <FaHeartbeat className="text-rose-500" />,
       color: analytics.hrStatus.color,
       bg: analytics.hrStatus.bg,
       desc: analytics.hrStatus.desc,
-      extra: `Range: ${analytics.minHR} - ${analytics.maxHR} bpm`,
     },
     {
-      id: "hrv",
-      label: "Heart Rate Variability",
-      value: analytics.hrv,
-      unit: "ms",
-      status: analytics.hrvStatus.status,
-      icon: <MdBloodtype className="text-blue-500" />,
-      color: analytics.hrvStatus.color,
-      bg: analytics.hrvStatus.bg,
-      desc: analytics.hrvStatus.desc,
-      extra: `Based on ${analytics.samples} samples`,
-    },
-    {
-      id: "trend",
-      label: "HR Trend",
-      value:
-        analytics.trend === "stable"
-          ? "Stable"
-          : analytics.trend === "up"
-            ? "Rising"
-            : "Falling",
-      unit: "",
-      status:
-        analytics.trend === "stable"
-          ? "Steady"
-          : analytics.trend === "up"
-            ? "Increasing"
-            : "Decreasing",
-      icon:
-        analytics.trend === "stable" ? (
-          <MdTrendingFlat className="text-cyan-500" />
-        ) : analytics.trend === "up" ? (
-          <MdTrendingUp className="text-amber-500" />
-        ) : (
-          <MdTrendingDown className="text-green-500" />
-        ),
-      color:
-        analytics.trend === "stable"
-          ? "text-cyan-600"
-          : analytics.trend === "up"
-            ? "text-amber-600"
-            : "text-green-600",
-      bg:
-        analytics.trend === "stable"
-          ? "bg-cyan-50"
-          : analytics.trend === "up"
-            ? "bg-amber-50"
-            : "bg-green-50",
-      desc: `Variance: ${analytics.variance} bpm over scan period`,
-      extra: null,
+      id: "respiratory-rate",
+      label: "Respiratory Rate",
+      value: analytics.rr,
+      unit: "breaths/min",
+      confidence: analytics.rrConfidence,
+      status: analytics.rrStatus.status,
+      icon: <FaLungs className="text-cyan-500" />,
+      color: analytics.rrStatus.color,
+      bg: analytics.rrStatus.bg,
+      desc: analytics.rrStatus.desc,
     },
     {
       id: "stress",
@@ -315,11 +278,8 @@ const ResultPage = () => {
       color: analytics.stress.color,
       bg: analytics.stress.bg,
       desc: analytics.stress.desc,
-      extra: null,
     },
   ];
-
-  const overallScore = analytics.overallScore;
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
@@ -334,6 +294,24 @@ const ResultPage = () => {
           </Link>
           <h1 className="text-2xl font-bold text-gray-800">Scan Results</h1>
         </div>
+
+        {/* Analysis Summary Banner */}
+        {(data.model_used || data.message) && (
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-gray-600">
+            {data.model_used && (
+              <span>
+                <strong className="text-gray-800">Model:</strong>{" "}
+                {data.model_used}
+              </span>
+            )}
+            {data.message && (
+              <span>
+                <strong className="text-gray-800">Message:</strong>{" "}
+                {data.message}
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Main Score Card */}
         <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 flex flex-col md:flex-row items-center justify-between gap-8">
@@ -379,8 +357,7 @@ const ResultPage = () => {
           </div>
 
           {/* Score Circle */}
-          <div className="relative w-40 h-40 flex items-center justify-center">
-            {/* Background Circle */}
+          <div className="relative w-40 h-40 flex items-center justify-center flex-shrink-0">
             <svg className="w-full h-full transform -rotate-90">
               <circle
                 cx="80"
@@ -390,13 +367,12 @@ const ResultPage = () => {
                 stroke="#f3f4f6"
                 strokeWidth="12"
               />
-              {/* Progress Circle - assuming 92% */}
               <circle
                 cx="80"
                 cy="80"
                 r="70"
                 fill="none"
-                stroke="#4f46e5" // indigo-600
+                stroke="#4f46e5"
                 strokeWidth="12"
                 strokeDasharray="440"
                 strokeDashoffset={440 - (440 * overallScore) / 100}
@@ -415,45 +391,147 @@ const ResultPage = () => {
           </div>
         </div>
 
-        {/* Metrics Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {biometricData.map((metric) => (
-            <div
-              key={metric.id}
-              className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
-            >
-              <div className="flex justify-between items-start mb-4">
-                <div className={`p-3 rounded-lg ${metric.bg} text-xl`}>
-                  {metric.icon}
+        {/* Vitals Grid */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Vitals</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {biometricData.map((metric) => (
+              <div
+                key={metric.id}
+                className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
+              >
+                <div className="flex justify-between items-start mb-3">
+                  <div className={`p-2.5 rounded-lg ${metric.bg} text-xl`}>
+                    {metric.icon}
+                  </div>
+                  <span
+                    className={`text-xs font-bold px-2 py-1 rounded-full ${metric.bg} ${metric.color}`}
+                  >
+                    {metric.status}
+                  </span>
                 </div>
-                <span
-                  className={`text-xs font-bold px-2 py-1 rounded-full ${metric.bg} ${metric.color}`}
-                >
-                  {metric.status}
-                </span>
+                <div className="mb-1">
+                  <span className="text-3xl font-bold text-gray-900">
+                    {metric.value}
+                  </span>
+                  {metric.unit && (
+                    <span className="text-sm text-gray-500 ml-1">
+                      {metric.unit}
+                    </span>
+                  )}
+                </div>
+                <h4 className="text-sm font-medium text-gray-700 mb-1">
+                  {metric.label}
+                </h4>
+                <p className="text-xs text-gray-400">{metric.desc}</p>
+                {"confidence" in metric &&
+                  metric.confidence !== undefined &&
+                  metric.confidence !== null && (
+                    <p className="text-xs text-indigo-500 mt-2">
+                      Confidence: {Math.round(metric.confidence * 100)}%
+                    </p>
+                  )}
               </div>
-              <div className="mb-2">
-                <span className="text-3xl font-bold text-gray-900">
-                  {metric.value}
-                </span>
-                <span className="text-sm text-gray-500 ml-1">
-                  {metric.unit}
-                </span>
-              </div>
-              <h3 className="text-sm font-medium text-gray-700 mb-1">
-                {metric.label}
-              </h3>
-              <p className="text-xs text-gray-400">{metric.desc}</p>
-              {metric.extra && (
-                <p className="text-xs text-gray-300 mt-1">{metric.extra}</p>
-              )}
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
+
+        {/* Processing Status */}
+        {ps && (
+          <div>
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">
+              Processing Status
+            </h3>
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="flex items-center gap-3">
+                {ps.face_detected ? (
+                  <FaCheckCircle className="text-green-500 text-lg flex-shrink-0" />
+                ) : (
+                  <FaTimesCircle className="text-red-500 text-lg flex-shrink-0" />
+                )}
+                <div>
+                  <p className="text-xs text-gray-400">Face Detected</p>
+                  <p className="font-semibold text-gray-800">
+                    {ps.face_detected ? "Yes" : "No"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <FaInfoCircle className="text-indigo-400 text-lg flex-shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-400">Signal Quality</p>
+                  <p className="font-semibold text-gray-800 capitalize">
+                    {ps.signal_quality || "n/a"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <FaInfoCircle className="text-indigo-400 text-lg flex-shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-400">Avg Face Confidence</p>
+                  <p className="font-semibold text-gray-800">
+                    {ps.avg_face_confidence !== undefined &&
+                    ps.avg_face_confidence !== null
+                      ? `${Math.round(ps.avg_face_confidence * 100)}%`
+                      : "n/a"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <FaInfoCircle className="text-indigo-400 text-lg flex-shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-400">Issues</p>
+                  <p className="font-semibold text-gray-800">
+                    {Array.isArray(ps.issues) && ps.issues.length > 0
+                      ? ps.issues.join(", ")
+                      : "None"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Preprocessing Info */}
+        {pp && (
+          <div>
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">
+              Preprocessing
+            </h3>
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <p className="text-xs text-gray-400">Input Frames</p>
+                <p className="font-semibold text-gray-800">
+                  {fmt(pp.input_frames)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400">FPS Used</p>
+                <p className="font-semibold text-gray-800">
+                  {fmt(pp.fps_used)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400">Resolution</p>
+                <p className="font-semibold text-gray-800">
+                  {pp.resolution || "n/a"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400">Pixel Format</p>
+                <p className="font-semibold text-gray-800">
+                  {pp.pixel_format || "n/a"}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Recommendations / Insights */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Main Insight */}
           <div
             className={`md:col-span-2 rounded-2xl p-6 text-white shadow-lg ${
               analytics.stress.level === "High"
@@ -472,14 +550,12 @@ const ResultPage = () => {
                 <p className="text-white/90 text-sm leading-relaxed mb-4">
                   {analytics.stress.level === "High"
                     ? "Your readings suggest elevated stress levels. Consider taking a break, practicing deep breathing exercises, or engaging in light activities like walking or stretching."
-                    : analytics.hrvStatus.status === "Low"
-                      ? "Your heart rate variability is lower than optimal, which may indicate fatigue or stress. Prioritize rest, hydration, and quality sleep tonight."
-                      : analytics.hrStatus.status === "Elevated" ||
-                          analytics.hrStatus.status === "High"
-                        ? "Your heart rate is elevated. If you haven't been exercising, consider resting and monitoring. Stay hydrated and avoid caffeine."
-                        : overallScore >= 85
-                          ? "Your heart rate variability indicates excellent recovery status. You're in great shape for a moderate to high intensity workout today."
-                          : "Your vitals suggest a balanced state. Consider light to moderate exercise and maintaining your current wellness routine."}
+                    : analytics.hrStatus.status === "Elevated" ||
+                        analytics.hrStatus.status === "High"
+                      ? "Your heart rate is elevated. If you haven't been exercising, consider resting and monitoring. Stay hydrated and avoid caffeine."
+                      : overallScore >= 85
+                        ? "Your vitals indicate excellent recovery status. You're in great shape for a moderate to high intensity workout today."
+                        : "Your vitals suggest a balanced state. Consider light to moderate exercise and maintaining your current wellness routine."}
                 </p>
                 <Link
                   href="/individual/appointments/book"
@@ -493,18 +569,17 @@ const ResultPage = () => {
             </div>
           </div>
 
-          {/* Secondary Actions */}
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col justify-center space-y-3">
             <Link
-              href="/individual/history"
+              href="/individual/analyse"
               className="flex items-center justify-between text-gray-600 hover:text-indigo-600 group transition-colors p-2 rounded-lg hover:bg-gray-50"
             >
-              <span className="font-medium text-sm">View Scan History</span>
+              <span className="font-medium text-sm">New Scan</span>
               <FaChevronRight className="text-gray-300 group-hover:text-indigo-400 transition-colors" />
             </Link>
             <div className="h-px bg-gray-100"></div>
             <Link
-              href="/individual/doctors"
+              href="/individual/appointments/book"
               className="flex items-center justify-between text-gray-600 hover:text-indigo-600 group transition-colors p-2 rounded-lg hover:bg-gray-50"
             >
               <span className="font-medium text-sm">Consult a Doctor</span>
