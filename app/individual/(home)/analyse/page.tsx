@@ -209,25 +209,25 @@ const AnalysePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto">
+    <div className="min-h-screen bg-gray-50 py-6 sm:py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto">
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          <div className="px-6 py-8 sm:p-10">
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-extrabold text-gray-900">
+          <div className="p-4 sm:p-10">
+            <div className="text-center mb-6 sm:mb-8">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">
                 Vital Signs Analysis
               </h1>
-              <p className="mt-4 text-lg text-gray-500">
+              <p className="mt-2 sm:mt-4 text-base sm:text-lg text-gray-500">
                 Record a 30-second video of your face or upload an existing one
                 to analyze your vital signs.
               </p>
             </div>
 
             {/* Tabs */}
-            <div className="flex justify-center mb-8 border-b border-gray-200">
+            <div className="flex justify-center mb-6 sm:mb-8 border-b border-gray-200">
               <button
                 onClick={() => setActiveTab("record")}
-                className={`px-6 py-3 text-sm font-medium flex items-center gap-2 border-b-2 transition-colors ${
+                className={`px-4 sm:px-6 py-3 text-sm font-medium flex items-center gap-2 border-b-2 transition-colors ${
                   activeTab === "record"
                     ? "border-indigo-600 text-indigo-600"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
@@ -237,7 +237,7 @@ const AnalysePage = () => {
               </button>
               <button
                 onClick={() => setActiveTab("upload")}
-                className={`px-6 py-3 text-sm font-medium flex items-center gap-2 border-b-2 transition-colors ${
+                className={`px-4 sm:px-6 py-3 text-sm font-medium flex items-center gap-2 border-b-2 transition-colors ${
                   activeTab === "upload"
                     ? "border-indigo-600 text-indigo-600"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
@@ -248,10 +248,10 @@ const AnalysePage = () => {
             </div>
 
             {/* Content */}
-            <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 min-h-[400px] flex flex-col items-center justify-center">
+            <div className="bg-gray-50 rounded-xl p-4 sm:p-6 border border-gray-200 min-h-[300px] sm:min-h-[400px] flex flex-col items-center justify-center">
               {activeTab === "record" ? (
                 <div className="w-full flex flex-col items-center">
-                  <div className="relative w-full max-w-md aspect-video bg-black rounded-lg overflow-hidden mb-6 shadow-inner">
+                  <div className="relative w-full max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl aspect-video bg-black rounded-lg overflow-hidden mb-6 shadow-inner">
                     <video
                       ref={videoRef}
                       autoPlay
@@ -315,7 +315,7 @@ const AnalysePage = () => {
                     <button
                       onClick={startRecording}
                       disabled={isAnalyzing}
-                      className="flex items-center gap-2 px-8 py-4 rounded-full font-bold text-white transition-all shadow-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center gap-2 px-6 py-3 sm:px-8 sm:py-4 text-sm sm:text-base rounded-full font-bold text-white transition-all shadow-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <FaPlay /> Start Recording ({RECORDING_DURATION}s)
                     </button>
@@ -323,7 +323,7 @@ const AnalysePage = () => {
                 </div>
               ) : (
                 <div className="w-full flex flex-col items-center">
-                  <div className="w-full max-w-md mb-4 flex items-start gap-2 text-amber-700 bg-amber-50 px-4 py-3 rounded-lg border border-amber-200 text-sm">
+                  <div className="w-full max-w-full sm:max-w-lg md:max-w-xl mb-4 flex items-start gap-2 text-amber-700 bg-amber-50 px-4 py-3 rounded-lg border border-amber-200 text-sm">
                     <FaExclamationTriangle className="flex-shrink-0 mt-0.5" />
                     <p>
                       For best results, upload a{" "}
@@ -332,9 +332,9 @@ const AnalysePage = () => {
                       accurate results.
                     </p>
                   </div>
-                  <div className="w-full max-w-md border-2 border-dashed border-gray-300 rounded-xl p-12 text-center hover:border-indigo-500 transition-colors bg-white">
-                    <FaUpload className="mx-auto text-4xl text-gray-400 mb-4" />
-                    <p className="text-gray-600 mb-4">
+                  <div className="w-full max-w-full sm:max-w-lg md:max-w-xl border-2 border-dashed border-gray-300 rounded-xl p-8 sm:p-12 text-center hover:border-indigo-500 transition-colors bg-white">
+                    <FaUpload className="mx-auto text-3xl sm:text-4xl text-gray-400 mb-4" />
+                    <p className="text-gray-600 mb-4 text-sm sm:text-base">
                       Drag and drop a video file here, or click to select
                     </p>
                     <input
@@ -372,11 +372,11 @@ const AnalysePage = () => {
             )}
 
             {/* Action Button */}
-            <div className="mt-8 flex justify-center">
+            <div className="mt-6 sm:mt-8 flex justify-center">
               <button
                 onClick={handleScan}
                 disabled={!file || isAnalyzing || isRecording}
-                className={`w-full sm:w-auto flex items-center justify-center gap-3 px-12 py-4 rounded-xl font-bold text-lg text-white transition-all shadow-xl ${
+                className={`w-full sm:w-auto flex items-center justify-center gap-2 sm:gap-3 px-8 py-3 sm:px-12 sm:py-4 rounded-xl font-bold text-base sm:text-lg text-white transition-all shadow-xl ${
                   !file || isAnalyzing || isRecording
                     ? "bg-gray-400 cursor-not-allowed"
                     : "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 hover:scale-105"

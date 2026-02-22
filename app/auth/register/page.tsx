@@ -76,7 +76,7 @@ export default function RegisterPage() {
                     <div className="space-y-3">
                         <div className="text-center">
                             <h2 className="text-xl font-bold text-gray-900">Create Account</h2>
-                            <p className="text-sm text-gray-500 mt-1">Join Cavista today.</p>
+                            <p className="text-sm text-gray-500 mt-1">Join VitalScan today.</p>
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-2">
